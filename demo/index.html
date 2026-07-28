@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Preview — Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    /* DESIGN.md tokens — dark surfaces, one indigo accent */
+    :root {
+        --surface-0: #121218;
+        --surface-1: #1E1E26;
+        --surface-2: #24242E;
+        --border: rgb(255 255 255 / 0.10);
+        --text-primary: #F5F5F5;
+        --text-secondary: #A8A8B3;
+        --accent: #818CF8;
+        --accent-strong: #6366F1;
+        --radius-control: 8px;
+        --radius-card: 14px;
+        --shadow-card: 0 6px 24px rgb(0 0 0 / 0.25);
+        --space-s: 8px;
+        --space-m: 16px;
+        --space-l: 24px;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--surface-0);
+        color: var(--text-primary);
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-l);
+    }
+    header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+    header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 14px; }
+    main { display: flex; gap: var(--space-m); flex: 1; min-height: 0; flex-wrap: wrap; }
+    #stage {
+        flex: 1 1 480px;
+        min-height: 480px;
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+    }
+    aside {
+        width: 260px;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        padding: var(--space-m);
+        align-self: flex-start;
+    }
+    aside h2 {
+        margin: 0 0 var(--space-s);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+    }
+    button, label.file {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text-primary);
+        font: 500 14px Inter, "Segoe UI", system-ui, sans-serif;
+        padding: 10px 14px;
+        border-radius: var(--radius-control);
+        cursor: pointer;
+        text-align: center;
+        transition: background 180ms ease-out, box-shadow 180ms ease-out;
+    }
+    button:hover, label.file:hover { background: #2C2C38; }
+    button:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25);
+    }
+    button.primary {
+        background: var(--accent-strong);
+        border-color: transparent;
+    }
+    button.primary:hover { background: var(--accent); }
+    .row { display: flex; gap: var(--space-s); }
+    .row > * { flex: 1; }
+    input[type="file"] { display: none; }
+    hr { border: none; border-top: 1px solid var(--border); margin: var(--space-s) 0; width: 100%; }
+</style>
+</head>
+<body>
+<header>
+    <h1>3D Preview</h1>
+    <p>Embeddable viewer container — drag to rotate, scroll to zoom, right-drag to pan.</p>
+</header>
+<main>
+    <div id="stage"></div>
+    <aside>
+        <h2>Scene</h2>
+        <button class="primary" id="btn-axes">Axes gizmo</button>
+        <button id="btn-cube">Cube</button>
+        <label class="file">Load GLB model<input type="file" id="file-model" accept=".glb,.gltf"></label>
+        <hr>
+        <h2>View</h2>
+        <div class="row">
+            <button id="btn-reset">Reset view</button>
+            <button id="btn-bg">Light bg</button>
+        </div>
+        <hr>
+        <h2>Export</h2>
+        <button id="btn-export">Download GLB</button>
+    </aside>
+</main>
+<script src="../web/preview3d.min.js"></script>
+<script>
+    const viewer = Preview3D.mount(document.getElementById('stage'), { background: '#1E1E26' });
+    viewer.show({ type: 'axes' });
+
+    document.getElementById('btn-axes').onclick = () => viewer.show({ type: 'axes' });
+    document.getElementById('btn-cube').onclick = () => viewer.show({
+        type: 'cube',
+        colors: ['#EF4444', '#F97316', '#22C55E', '#EAB308', '#3B82F6', '#A855F7'],
+    });
+    document.getElementById('btn-reset').onclick = () => viewer.resetView();
+
+    let light = false;
+    const bgBtn = document.getElementById('btn-bg');
+    bgBtn.onclick = () => {
+        light = !light;
+        viewer.setBackground(light ? '#ECEEF6' : '#1E1E26');
+        bgBtn.textContent = light ? 'Dark bg' : 'Light bg';
+    };
+
+    document.getElementById('file-model').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let binary = '';
+        for (const b of bytes) binary += String.fromCharCode(b);
+        await viewer.loadModelData(btoa(binary));
+    };
+
+    document.getElementById('btn-export').onclick = async () => {
+        const blob = await viewer.exportGLB();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'preview.glb';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    };
+
+    window.addEventListener('unhandledrejection', (e) => console.error('3D Preview:', e.reason));
+</script>
+</body>
+</html>
