@@ -17,12 +17,15 @@
         --surface-0: #121218;
         --surface-1: #1E1E26;
         --surface-2: #24242E;
+        --surface-hover: #2C2C38;
         --border: rgb(255 255 255 / 0.10);
         --text-primary: #F5F5F5;
         --text-secondary: #A8A8B3;
+        --text-muted: #6E6E7E;
         --accent: #818CF8;
         --accent-strong: #6366F1;
         --radius-control: 8px;
+        --radius-small: 6px;
         --radius-card: 14px;
         --shadow-card: 0 6px 24px rgb(0 0 0 / 0.25);
         --space-s: 8px;
@@ -32,10 +35,10 @@
     * { box-sizing: border-box; }
     body {
         margin: 0;
-        min-height: 100vh;
+        height: 100vh;
         background: var(--surface-0);
         color: var(--text-primary);
-        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        font-family: Inter, system-ui, sans-serif;
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
@@ -43,110 +46,204 @@
     }
     header h1 { margin: 0; font-size: 24px; font-weight: 700; }
     header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 14px; }
-    main { display: flex; gap: var(--space-m); flex: 1; min-height: 0; flex-wrap: wrap; }
-    #stage {
-        flex: 1 1 480px;
-        min-height: 480px;
+    main { display: flex; gap: var(--space-m); flex: 1; min-height: 0; }
+    .card {
         background: var(--surface-1);
         border: 1px solid var(--border);
         border-radius: var(--radius-card);
         box-shadow: var(--shadow-card);
-        overflow: hidden;
     }
+    #stage { flex: 1; min-width: 0; overflow: hidden; }
     aside {
-        width: 260px;
+        width: 320px;
+        flex: none;
+        padding: var(--space-m);
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-        background: var(--surface-1);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-card);
-        padding: var(--space-m);
-        align-self: flex-start;
+        overflow-y: auto;
     }
-    aside h2 {
-        margin: 0 0 var(--space-s);
-        font-size: 13px;
+    h2 {
+        margin: var(--space-s) 0 0;
+        font-size: 11px;
         font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+        letter-spacing: 1px;
         color: var(--text-secondary);
     }
+    .row { display: flex; gap: var(--space-s); flex-wrap: wrap; }
+    .row > * { flex: 1 1 0; min-width: 0; }
+    /* Fixed tracks, not flex: seven view buttons on one flex line squeeze past
+       the panel edge instead of wrapping. */
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-s); }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-s); }
     button, label.file {
         appearance: none;
         border: 1px solid var(--border);
         background: var(--surface-2);
         color: var(--text-primary);
-        font: 500 14px Inter, "Segoe UI", system-ui, sans-serif;
-        padding: 10px 14px;
+        font: 500 13px Inter, system-ui, sans-serif;
+        padding: 8px 10px;
         border-radius: var(--radius-control);
         cursor: pointer;
         text-align: center;
-        transition: background 180ms ease-out, box-shadow 180ms ease-out;
+        transition: background 160ms ease-out;
     }
-    button:hover, label.file:hover { background: #2C2C38; }
-    button:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25);
-    }
-    button.primary {
-        background: var(--accent-strong);
-        border-color: transparent;
-    }
-    button.primary:hover { background: var(--accent); }
-    .row { display: flex; gap: var(--space-s); }
-    .row > * { flex: 1; }
+    button:hover, label.file:hover { background: var(--surface-hover); }
+    button.on { background: var(--accent-strong); border-color: transparent; }
+    button.on:hover { background: var(--accent); }
+    button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25); }
     input[type="file"] { display: none; }
-    hr { border: none; border-top: 1px solid var(--border); margin: var(--space-s) 0; width: 100%; }
+    #readout {
+        font-size: 13px;
+        line-height: 20px;
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+    }
+    #parts { display: flex; flex-direction: column; gap: 2px; }
+    .part { display: flex; align-items: center; gap: var(--space-s); font-size: 13px; }
+    .part .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .part.group .name { font-weight: 600; color: var(--accent); }
+    .part input[type="range"] { width: 72px; flex: none; accent-color: var(--accent-strong); }
+    .part input[type="checkbox"] { accent-color: var(--accent-strong); }
+    .part button { flex: none; width: 60px; padding: 4px 6px; font-size: 11px; border-radius: var(--radius-small); }
+    .hint { color: var(--text-muted); font-size: 12px; margin: 0; }
+    footer { display: flex; gap: var(--space-m); flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+    kbd {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-small);
+        padding: 3px 7px;
+        font: 500 12px Inter, system-ui, sans-serif;
+        color: var(--text-primary);
+        margin-right: 6px;
+    }
 </style>
 </head>
 <body>
 <header>
     <h1>3D Preview</h1>
-    <p>Embeddable viewer container — drag to rotate, scroll to zoom, right-drag to pan.</p>
+    <p>Embeddable viewer component — the same core runs in websites and Qt apps.</p>
 </header>
 <main>
-    <div id="stage"></div>
-    <aside>
-        <h2>Scene</h2>
-        <button class="primary" id="btn-axes">Axes gizmo</button>
-        <button id="btn-cube">Cube</button>
-        <label class="file">Load GLB model<input type="file" id="file-model" accept=".glb,.gltf"></label>
-        <hr>
-        <h2>View</h2>
+    <div id="stage" class="card"></div>
+    <aside class="card">
+        <h2>SCENE</h2>
+        <div class="grid2" id="scenes"></div>
+        <label class="file">Load GLB file…<input type="file" id="file-model" accept=".glb,.gltf"></label>
+        <h2>VIEW</h2>
+        <div class="grid4" id="views"></div>
+        <h2>PROJECTION</h2>
+        <div class="row" id="projections"></div>
+        <h2>DISPLAY</h2>
         <div class="row">
-            <button id="btn-reset">Reset view</button>
-            <button id="btn-bg">Light bg</button>
+            <button id="btn-grid">Grid</button>
+            <button id="btn-bg">Bg: Dark</button>
+            <button id="btn-export">Export GLB</button>
         </div>
-        <hr>
-        <h2>Export</h2>
-        <button id="btn-export">Download GLB</button>
+        <h2>CAMERA</h2>
+        <div id="readout"></div>
+        <h2>PARTS</h2>
+        <p class="hint">Toggle visibility, drag for opacity, solo cycles a group's children.</p>
+        <div id="parts"></div>
     </aside>
 </main>
+<footer>
+    <span><kbd>Drag</kbd>Rotate</span>
+    <span><kbd>Wheel</kbd>Zoom</span>
+    <span><kbd>Right-drag</kbd>Pan</span>
+    <span><kbd>Arrows</kbd>Move around</span>
+    <span><kbd>Ctrl+Arrows</kbd>Pan</span>
+    <span><kbd>Shift+←→</kbd>Cycle views</span>
+    <span><kbd>Shift+↑↓</kbd>Top / bottom</span>
+    <span><kbd>P G R</kbd>Projection · Grid · Reset</span>
+</footer>
+
 <script src="../web/preview3d.min.js"></script>
 <script>
     const viewer = Preview3D.mount(document.getElementById('stage'), { background: '#1E1E26' });
-    viewer.show({ type: 'axes' });
 
-    document.getElementById('btn-axes').onclick = () => viewer.show({ type: 'axes' });
-    document.getElementById('btn-cube').onclick = () => viewer.show({
-        type: 'cube',
-        colors: ['#EF4444', '#F97316', '#22C55E', '#EAB308', '#3B82F6', '#A855F7'],
-    });
-    document.getElementById('btn-reset').onclick = () => viewer.resetView();
+    // ---- Scenes: parametric specs, not model files (root Rule 19) ----------
+    const SCENES = [
+        { name: 'Axes gizmo', spec: { type: 'axes' } },
+        {
+            name: 'Compass axes',
+            spec: {
+                type: 'axes',
+                arms: [
+                    { axis: '+x', label: ['East', 'Istok', 'E'] },
+                    { axis: '-x', label: ['West', 'Zapad', 'W'] },
+                    { axis: '+y', label: ['Zenith', 'Zenit', 'Up'] },
+                    { axis: '-y', label: ['Nadir', 'Nadir', 'Down'] },
+                    { axis: '+z', label: ['North', 'Sever', 'N'] },
+                    { axis: '-z', label: ['South', 'Jug', 'S'] },
+                ],
+            },
+        },
+        { name: 'Cube', spec: { type: 'cube', colors: 'poles' } },
+        {
+            name: 'Cube + core',
+            spec: {
+                type: 'cube', name: 'shell', colors: 'poles',
+                children: [{ type: 'cube', name: 'core', size: 0.45, color: '#F5F5F5' }],
+            },
+        },
+    ];
+    const BACKGROUNDS = [
+        { name: 'Dark', color: '#1E1E26' },
+        { name: 'Light', color: '#ECEEF6' },
+        { name: 'Transparent', color: 'transparent' },
+    ];
 
-    let light = false;
-    const bgBtn = document.getElementById('btn-bg');
-    bgBtn.onclick = () => {
-        light = !light;
-        viewer.setBackground(light ? '#ECEEF6' : '#1E1E26');
-        bgBtn.textContent = light ? 'Dark bg' : 'Light bg';
+    function buttonRow(host, entries, onClick) {
+        const made = [];
+        for (const entry of entries) {
+            const button = document.createElement('button');
+            button.textContent = entry.label;
+            button.dataset.key = entry.key;
+            button.onclick = () => { onClick(entry.key); focusStage(); };
+            host.appendChild(button);
+            made.push(button);
+        }
+        return made;
+    }
+
+    const focusStage = () => document.getElementById('stage').focus();
+    const mark = (buttons, key) =>
+        buttons.forEach((b) => b.classList.toggle('on', b.dataset.key === key));
+
+    const sceneButtons = buttonRow(
+        document.getElementById('scenes'),
+        SCENES.map((s, i) => ({ key: String(i), label: s.name })),
+        (key) => { mark(sceneButtons, key); viewer.show(SCENES[Number(key)].spec); },
+    );
+    const viewButtons = buttonRow(
+        document.getElementById('views'),
+        Object.entries(Preview3D.VIEW_PRESETS).map(([key, p]) => ({ key, label: p.label })),
+        (key) => viewer.setView(key),
+    );
+    const projectionButtons = buttonRow(
+        document.getElementById('projections'),
+        [{ key: 'perspective', label: 'Perspective' }, { key: 'orthographic', label: 'Orthographic' }],
+        (key) => viewer.setProjection(key),
+    );
+
+    const gridButton = document.getElementById('btn-grid');
+    gridButton.onclick = () => { viewer.setGrid(!viewer.gridEnabled); focusStage(); };
+
+    let backgroundIndex = 0;
+    const bgButton = document.getElementById('btn-bg');
+    bgButton.onclick = () => {
+        backgroundIndex = (backgroundIndex + 1) % BACKGROUNDS.length;
+        const background = BACKGROUNDS[backgroundIndex];
+        bgButton.textContent = `Bg: ${background.name}`;
+        viewer.setBackground(background.color);
+        focusStage();
     };
 
-    document.getElementById('file-model').onchange = async (e) => {
-        const file = e.target.files[0];
+    document.getElementById('file-model').onchange = async (event) => {
+        const file = event.target.files[0];
         if (!file) return;
+        mark(sceneButtons, null);
         const bytes = new Uint8Array(await file.arrayBuffer());
         let binary = '';
         for (const b of bytes) binary += String.fromCharCode(b);
@@ -162,6 +259,93 @@
         URL.revokeObjectURL(link.href);
     };
 
+    // ---- Parts list -------------------------------------------------------
+    const partsHost = document.getElementById('parts');
+    const soloState = new Map();
+
+    function childrenOf(parts) {
+        const map = new Map();
+        for (const part of parts) {
+            const cut = part.path.lastIndexOf('/');
+            if (cut < 0) continue;
+            const parent = part.path.slice(0, cut);
+            if (!map.has(parent)) map.set(parent, []);
+            map.get(parent).push(part.path.slice(cut + 1));
+        }
+        return map;
+    }
+
+    function renderParts() {
+        const parts = viewer.listParts();
+        const children = childrenOf(parts);
+        partsHost.replaceChildren();
+
+        for (const part of parts) {
+            const row = document.createElement('div');
+            row.className = part.drawable ? 'part' : 'part group';
+            row.style.paddingLeft = `${part.depth * 12}px`;
+
+            const visible = document.createElement('input');
+            visible.type = 'checkbox';
+            visible.checked = part.visible;
+            visible.title = `Show / hide ${part.path}`;
+            visible.onchange = () => viewer.setPartVisible(part.path, visible.checked);
+            row.append(visible);
+
+            const name = document.createElement('span');
+            name.className = 'name';
+            name.textContent = part.name;
+            name.title = part.path;
+            row.append(name);
+
+            if (part.drawable) {
+                const opacity = document.createElement('input');
+                opacity.type = 'range';
+                opacity.min = 0; opacity.max = 100;
+                opacity.value = Math.round(part.opacity * 100);
+                opacity.title = `Opacity of ${part.path}`;
+                opacity.oninput = () => viewer.setPartOpacity(part.path, opacity.value / 100);
+                row.append(opacity);
+            } else if ((children.get(part.path) ?? []).length > 1) {
+                const kids = children.get(part.path);
+                const index = soloState.get(part.path) ?? -1;
+                const solo = document.createElement('button');
+                solo.textContent = index < 0 ? 'solo' : `${index + 1}/${kids.length}`;
+                solo.title = "Show one child at a time; cycles, then back to all";
+                solo.onclick = () => {
+                    const next = (soloState.get(part.path) ?? -1) + 1 >= kids.length
+                        ? -1 : (soloState.get(part.path) ?? -1) + 1;
+                    soloState.set(part.path, next);
+                    if (next < 0) kids.forEach((k) => viewer.setPartVisible(`${part.path}/${k}`, true));
+                    else viewer.showOnly(part.path, kids[next]);
+                    renderParts();
+                };
+                row.append(solo);
+            }
+            partsHost.append(row);
+        }
+    }
+
+    // ---- Live camera readout ----------------------------------------------
+    let contentVersion = null;
+    viewer.onCameraChange((state) => {
+        document.getElementById('readout').textContent =
+            `Azimuth ${state.azimuth.toFixed(1)}°  ·  Elevation ${state.elevation.toFixed(1)}°\n`
+            + `Distance ${state.distance.toFixed(2)}  ·  ${state.view} · ${state.projection}\n`
+            + `Grid ${state.grid ? state.gridStep + ' per cell' : 'off'}`;
+        document.getElementById('readout').style.whiteSpace = 'pre-line';
+        mark(viewButtons, state.view);
+        mark(projectionButtons, state.projection);
+        gridButton.classList.toggle('on', state.grid);
+        // Model loading is async; this is the moment the part list is real.
+        if (state.contentVersion !== contentVersion) {
+            contentVersion = state.contentVersion;
+            soloState.clear();
+            renderParts();
+        }
+    });
+
+    sceneButtons[1].click();
     window.addEventListener('unhandledrejection', (e) => console.error('3D Preview:', e.reason));
 </script>
 </body>
