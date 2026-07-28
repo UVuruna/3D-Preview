@@ -1,6 +1,6 @@
 # 3D Preview
 
-Embeddable 3D previewer — one Three.js core with orbit controls, view presets and a perspective/orthographic switch, embedded by Python desktop GUIs as a PySide6 widget or by websites with a single script tag. Every element of a scene can be shown, hidden or made translucent by name; simple shapes are computed from parametric JSON specs, and glTF/GLB models load and export.
+Embeddable 3D previewer — one Three.js core with orbit controls, view presets and a perspective/orthographic switch, used by Python GUIs as a PySide6 widget or by websites with one script tag. Scene elements are shown, hidden or dimmed by name; simple shapes are computed from JSON specs, and glTF/GLB models load and export.
 
 ## Table of Contents
 
