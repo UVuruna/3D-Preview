@@ -5,9 +5,12 @@
 
 import { Viewer } from './viewer.js';
 
-export { Viewer } from './viewer.js';
-export { buildPrimitive } from './primitives.js';
+export { Viewer, VIEWER_DEFAULTS } from './viewer.js';
+export { buildPrimitive, AXES_DEFAULTS, CUBE_DEFAULTS, POLE_COLORS, POLE_FACE_COLORS } from './primitives.js';
 export { makeLabelSprite } from './labels.js';
+export { VIEW_PRESETS, VIEW_ORDER, FREE_VIEW } from './views.js';
+export { KEYBOARD_DEFAULTS } from './keyboard.js';
+export { GRID_DEFAULTS } from './grid.js';
 
 export function mount(container, options) {
     return new Viewer(container, options);

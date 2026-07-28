@@ -4,12 +4,14 @@
 
 ## Purpose
 
-The 3D Preview container: owns the WebGL renderer, perspective camera, orbit controls (rotate / zoom / pan), studio lighting, and the lifecycle of whatever content is shown. Everything a consumer embeds *is* one `Viewer` instance.
+The 3D Preview container: owns the renderer, both cameras, orbit controls, studio lighting, the optional ground grid, and the lifecycle of whatever content is shown. Everything a consumer embeds *is* one `Viewer` instance, and every host control — button, key, Python method — routes through one of its methods.
 
 ## Connections
 
 ### Uses
 - [Parametric Primitives](primitives.md) — builds computed shapes from `show()` specs
+- [Parts](parts.md) — the part operations are thin delegations
+- [Source (folder)](___src.md) → `views.js`, `grid.js`, `keyboard.js`
 - Three.js addons: `OrbitControls`, `GLTFLoader`, `GLTFExporter`, `RoomEnvironment`
 
 ### Used by
@@ -21,48 +23,75 @@ The 3D Preview container: owns the WebGL renderer, perspective camera, orbit con
 ### Viewer
 
 #### Attributes
-- `options`: instance config — `VIEWER_DEFAULTS` overridden by the constructor argument (background, fov, fitMargin, dampingFactor, viewDirection)
-- `renderer` / `scene` / `camera` / `controls`: the Three.js quartet
-- `_content`: a `Group` holding the currently shown object — swapped atomically by `_setContent()`
+- `options`: instance config — `VIEWER_DEFAULTS` overridden by the constructor argument (background, fov, fitMargin, dampingFactor, view, projection, grid, keyboard, stateInterval)
+- `perspectiveCamera` / `orthographicCamera`: both exist for the life of the viewer; `camera` points at the active one
+- `projection`: `'perspective'` | `'orthographic'`
+- `viewName`: the active preset, or `'free'` once the user orbits away
+- `gridEnabled` / `gridStep`: grid state; the step is the rounded cell size
+- `_content`: a `Group` holding the current object — swapped atomically by `_setContent()`
+- `_contentVersion`: bumped on every content swap; a host watches it to know when to re-read the part list
 
-#### Methods
-- `show(spec)`: display a parametric primitive (`{type: 'axes' | 'cube', ...}`); `{type: 'model', url}` delegates to `loadModel()`
-- `loadModel(url)`: async glTF/GLB load over HTTP(S)
-- `loadModelData(base64)`: async glTF/GLB load from raw bytes — the PySide6 path, since Chromium blocks `fetch()` on `file://` URLs
-- `exportGLB()`: current content as a binary glTF `Blob` (label sprites are viewer-side and not exported)
-- `fitView()` / `resetView()`: frame the content (pseudocode below)
-- `setBackground(color)`: CSS color or `'transparent'` (alpha clear + transparent container)
-- `requestRender()`: mark dirty — actual rendering happens on the next tick
-- `dispose()`: cancel the loop, release GPU resources, remove the canvas
+#### Content
+- `show(spec)`: display a parametric primitive; `{type: 'model', url}` delegates to `loadModel()`
+- `loadModel(url)` / `loadModelData(base64)`: async glTF/GLB load. The base64 form is the PySide6 path, since Chromium blocks `fetch()` on `file://` URLs
+- `exportGLB()`: current content as a binary glTF `Blob`
+
+#### Parts
+`listParts()`, `setPartVisible(path, visible)`, `setPartOpacity(path, alpha)`, `showOnly(groupPath, childName)`, `removePart(path)` — see [Parts](parts.md) and [Making Models](../MODELS.md).
+
+#### Camera
+- `setView(name)` / `stepView(±1)`: jump to or cycle the presets
+- `setProjection(kind)`: swap projection while keeping the content the same apparent size
+- `orbitBy(azimuth°, elevation°)`: move around the content; the point looked at stays put
+- `panBy(dx, dy)`: slide the view; steps are fractions of the visible height, so they feel identical at any zoom
+- `zoomBy(factor)`: `> 1` zooms in
+- `fitView()` / `resetView()`: frame the content (algorithm below)
+- `cameraState()`: azimuth, elevation, distance, view, projection, grid state, content version
+- `onCameraChange(callback)`: subscribe; fires immediately with the current state and returns an unsubscribe function
+
+#### Appearance & lifecycle
+`setBackground(color)` (CSS colour or `'transparent'`), `setGrid(enabled)`, `requestRender()`, `dispose()`.
 
 ## Framing Algorithm (fitView)
 
 Measures the content's real **silhouette** from the view direction, then pulls the camera back until that silhouette fills the frustum — in BOTH axes, so a wide container is actually used.
 
 ```
-basis ← orthonormal (right, up, forward) from viewDirection
+basis ← orthonormal (right, up, forward) from the view direction
         forward points from the content toward the camera
         (world +Z replaces world up as the reference for a straight top/bottom view)
 
-FOR EACH object IN content:
-    IF object is a billboard sprite:
-        record its center, padded by half its scale in right and up
-    ELSE:
-        FOR EACH vertex: record vertex × worldMatrix
-    record(point) = project onto (right, up, forward) → track min/max
+PASS 1 — extent:
+FOR EACH point OF content (see below):
+    project onto (right, up, forward) → track min/max
+center ← middle of that extent
 
-halfW, halfH, halfD ← half the recorded extent in right / up / forward
-target   ← center of the recorded extent
+PASS 2 — distance:
 tanY ← tan(fov / 2);  tanX ← tanY × aspect
-distance ← halfD + max(halfH / tanY, halfW / tanX) × fitMargin
-camera   ← target + forward × distance
-near/far ← distance / 100, distance × 100
+FOR EACH point:
+    need ← depth + max(|up offset| / tanY, |right offset| / tanX) × fitMargin
+    distance ← max(distance, need)
+
+camera ← center + forward × distance;  orbit target ← center
+IF orthographic: frustum height ← 2 × max(halfHeight, halfWidth / aspect) × fitMargin
 ```
 
-**Why not the bounding box or sphere** (a few lines shorter each): both measure the enclosing solid, not the shape. The axes gizmo's box corners sit at `(±L, ±L, ±L)` where the gizmo has nothing at all, framing it at roughly 55% of the space it should fill. The vertex pass runs once per content swap — never per frame.
+A "point" is a real vertex for meshes, and the four screen-parallel corners for billboard sprites — they turn to face the camera, so their world geometry says nothing about their size.
+
+**Why not the bounding box or sphere** (a few lines shorter each): both measure the enclosing solid, not the shape. The axes gizmo's box corners sit at `(±L, ±L, ±L)` where the gizmo has nothing at all, framing it at roughly 55% of the space it should fill. **And why per-point rather than aggregate:** `halfDepth + halfHeight / tan(fov/2)` assumes the widest point is also the nearest, which for anything viewed corner-on it is not — that assumption alone costs about a third of the frame. Both passes run once per content swap, never per frame.
+
+## Projection Switching
+
+Switching keeps the content the same size on screen: the visible height at the orbit target is measured before the swap and reproduced after it — as a frustum height for the orthographic camera, and as a camera distance for the perspective one (perspective has no zoom knob; apparent size *is* distance).
+
+`OrbitControls` binds to one camera at construction and reads its projection type for zoom behaviour, so a switch builds fresh controls and copies the target across.
+
+**Orthographic is not a style choice.** It is the only projection in which a cube viewed down its body diagonal produces a geometrically exact regular hexagon; under perspective the six corner radii differ by about 25% at a 45° field of view. Measured: silhouette corner-radius spread 1.001x orthographic versus 1.269x perspective.
 
 ## Design Decisions
 
 - **Render-on-demand:** `_tick()` runs every frame but renders only when `controls.update()` reports movement (orbiting / damping inertia) or `_dirty` is set. Idle preview = idle GPU.
+- **Camera notifications are rate-limited** to `stateInterval` (80 ms) while moving, with a final state when movement stops. A 60 Hz stream over the Qt bridge buys nothing a readout can show.
 - **Runtime environment lighting:** `RoomEnvironment` through `PMREMGenerator` gives PBR materials a neutral studio look with **no HDR asset** (root Rule #19), plus one directional light for definition.
 - **Content disposal on swap:** `_clear()` walks the outgoing content and disposes geometry, materials and textures — repeated `show()` calls cannot leak GPU memory.
+- **The grid lives outside the content group**, so enabling it never changes how the content is framed.
