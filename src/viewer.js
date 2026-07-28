@@ -9,12 +9,16 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildPrimitive } from './primitives.js';
 
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const WORLD_FORWARD = new THREE.Vector3(0, 0, 1);   // basis reference for a top/bottom view
+const MIN_FIT_DISTANCE = 1e-3;                      // keeps near/far valid for zero-extent content
+
 // All tunables live here (root Rule #4) — every value is overridable
 // per instance through the `options` constructor argument.
 export const VIEWER_DEFAULTS = {
     background: '#16161F',   // DESIGN.md dark surface; 'transparent' is also valid
     fov: 45,                 // vertical field of view, degrees
-    fitMargin: 1.05,         // bounding-sphere margin when framing content
+    fitMargin: 1.1,          // breathing room around the content when framing
     dampingFactor: 0.08,     // orbit-controls inertia
     viewDirection: [1, 0.55, 1],  // default camera direction when framing
 };
@@ -116,23 +120,86 @@ export class Viewer {
 
     // ---- Camera -----------------------------------------------------------
 
-    // Frame the content: camera pulled back along viewDirection far enough
-    // for the content's bounding sphere to fit the field of view.
+    // Frame the content: measure its real silhouette as seen from
+    // viewDirection, then pull the camera back just far enough for that
+    // silhouette to fill the frustum — horizontally AND vertically, so a wide
+    // container is actually used.
+    //
+    // Measuring the bounding BOX (or sphere) instead is far shorter but pads
+    // star-shaped content badly: the axes gizmo's box corners stick out at
+    // (±L, ±L, ±L) where the gizmo itself has nothing, framing it at ~55% of
+    // the space it should occupy.
     fitView() {
-        const box = new THREE.Box3().setFromObject(this._content);
-        if (box.isEmpty()) return;
-        const sphere = box.getBoundingSphere(new THREE.Sphere());
-        const halfFov = THREE.MathUtils.degToRad(this.camera.fov / 2);
-        const distance = (sphere.radius * this.options.fitMargin) / Math.sin(halfFov);
-        const direction = new THREE.Vector3(...this.options.viewDirection).normalize();
+        const extent = this._contentExtent();
+        if (!extent) return;
+        const { forward, right, up } = this._viewBasis();
+        const tanY = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+        const tanX = tanY * this.camera.aspect;
 
-        this.camera.position.copy(sphere.center).addScaledVector(direction, distance);
+        const target = new THREE.Vector3()
+            .addScaledVector(right, extent.center.x)
+            .addScaledVector(up, extent.center.y)
+            .addScaledVector(forward, extent.center.z);
+        const distance = Math.max(
+            extent.half.z + Math.max(extent.half.y / tanY, extent.half.x / tanX) * this.options.fitMargin,
+            MIN_FIT_DISTANCE,
+        );
+
+        this.camera.position.copy(target).addScaledVector(forward, distance);
         this.camera.near = distance / 100;
         this.camera.far = distance * 100;
         this.camera.updateProjectionMatrix();
-        this.controls.target.copy(sphere.center);
+        this.controls.target.copy(target);
         this.controls.update();
         this.requestRender();
+    }
+
+    // Orthonormal camera basis for the configured view direction. `forward`
+    // points from the content toward the camera.
+    _viewBasis() {
+        const forward = new THREE.Vector3(...this.options.viewDirection).normalize();
+        const reference = Math.abs(forward.y) > 0.999 ? WORLD_FORWARD : WORLD_UP;
+        const right = new THREE.Vector3().crossVectors(reference, forward).normalize();
+        const up = new THREE.Vector3().crossVectors(forward, right);
+        return { forward, right, up };
+    }
+
+    // Content extent in view-basis coordinates (x = right, y = up, z = depth),
+    // measured over real vertices — one pass, only on a content swap.
+    // Returns null when there is nothing to frame.
+    _contentExtent() {
+        const { forward, right, up } = this._viewBasis();
+        const min = new THREE.Vector3(Infinity, Infinity, Infinity);
+        const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+        const point = new THREE.Vector3();
+
+        const record = (world, padX = 0, padY = 0) => {
+            const local = new THREE.Vector3(world.dot(right), world.dot(up), world.dot(forward));
+            min.min(new THREE.Vector3(local.x - padX, local.y - padY, local.z));
+            max.max(new THREE.Vector3(local.x + padX, local.y + padY, local.z));
+        };
+
+        this._content.updateWorldMatrix(true, true);
+        this._content.traverse((object) => {
+            if (object.isSprite) {
+                // Billboards always face the camera: their footprint is the
+                // sprite's scale, spread across the screen-parallel axes.
+                object.getWorldPosition(point);
+                record(point, object.scale.x / 2, object.scale.y / 2);
+                return;
+            }
+            const position = object.geometry?.getAttribute('position');
+            if (!position) return;
+            for (let i = 0; i < position.count; i++) {
+                record(point.fromBufferAttribute(position, i).applyMatrix4(object.matrixWorld));
+            }
+        });
+
+        if (min.x > max.x) return null;
+        return {
+            center: min.clone().add(max).multiplyScalar(0.5),
+            half: max.clone().sub(min).multiplyScalar(0.5),
+        };
     }
 
     resetView() {

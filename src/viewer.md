@@ -37,13 +37,29 @@ The 3D Preview container: owns the WebGL renderer, perspective camera, orbit con
 
 ## Framing Algorithm (fitView)
 
+Measures the content's real **silhouette** from the view direction, then pulls the camera back until that silhouette fills the frustum — in BOTH axes, so a wide container is actually used.
+
 ```
-sphere   ← bounding sphere of the content's bounding box
-distance ← sphere.radius × fitMargin / sin(fov / 2)
-camera   ← sphere.center + normalized(viewDirection) × distance
+basis ← orthonormal (right, up, forward) from viewDirection
+        forward points from the content toward the camera
+        (world +Z replaces world up as the reference for a straight top/bottom view)
+
+FOR EACH object IN content:
+    IF object is a billboard sprite:
+        record its center, padded by half its scale in right and up
+    ELSE:
+        FOR EACH vertex: record vertex × worldMatrix
+    record(point) = project onto (right, up, forward) → track min/max
+
+halfW, halfH, halfD ← half the recorded extent in right / up / forward
+target   ← center of the recorded extent
+tanY ← tan(fov / 2);  tanX ← tanY × aspect
+distance ← halfD + max(halfH / tanY, halfW / tanX) × fitMargin
+camera   ← target + forward × distance
 near/far ← distance / 100, distance × 100
-orbit target ← sphere.center
 ```
+
+**Why not the bounding box or sphere** (a few lines shorter each): both measure the enclosing solid, not the shape. The axes gizmo's box corners sit at `(±L, ±L, ±L)` where the gizmo has nothing at all, framing it at roughly 55% of the space it should fill. The vertex pass runs once per content swap — never per frame.
 
 ## Design Decisions
 
