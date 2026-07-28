@@ -65,10 +65,15 @@ class _Bridge(QObject):
     """The object JS calls into. One slot per message the page can send."""
 
     cameraReported = Signal(dict)
+    animationReported = Signal(dict)
 
     @Slot("QVariantMap")
     def reportCamera(self, state: dict) -> None:  # noqa: N802 — JS-facing name
         self.cameraReported.emit(state)
+
+    @Slot("QVariantMap")
+    def reportAnimation(self, state: dict) -> None:  # noqa: N802 — JS-facing name
+        self.animationReported.emit(state)
 
 
 class _ConsolePage(QWebEnginePage):
@@ -91,9 +96,14 @@ class Preview3DWidget(QWebEngineView):
         camera_changed(dict): {azimuth, elevation, distance, view, projection,
             grid, gridStep} — azimuth/elevation in degrees. Emitted while the
             camera moves, rate-limited by the viewer.
+        animation_changed(dict): {scene, label, playing, time, duration,
+            progress, speed, frame, frames, loop} — playback state, likewise
+            rate-limited. A non-looping scene reaching its end reports
+            playing=False at progress=1; that report IS the end-of-scene signal.
     """
 
     camera_changed = Signal(dict)
+    animation_changed = Signal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -118,6 +128,7 @@ class Preview3DWidget(QWebEngineView):
         # does not flash white (see _sync_background).
         self._bridge.cameraReported.connect(self._sync_background)
         self._bridge.cameraReported.connect(self.camera_changed)
+        self._bridge.animationReported.connect(self.animation_changed)
         self._channel = QWebChannel(self)
         self._channel.registerObject("bridge", self._bridge)
         page.setWebChannel(self._channel)
@@ -187,6 +198,10 @@ class Preview3DWidget(QWebEngineView):
         """Move around the content by degrees; the point looked at stays put."""
         self._run(f"viewer.orbitBy({azimuth}, {elevation})")
 
+    def set_orbit(self, azimuth: float, elevation: float) -> None:
+        """Look from an absolute direction, in degrees, at the same distance."""
+        self._run(f"viewer.setOrbit({azimuth}, {elevation})")
+
     def pan_by(self, dx: float, dy: float) -> None:
         """Slide the view; steps are fractions of the visible height."""
         self._run(f"viewer.panBy({dx}, {dy})")
@@ -211,6 +226,54 @@ class Preview3DWidget(QWebEngineView):
     def set_grid(self, enabled: bool) -> None:
         """Toggle the reference grid; its cell size is reported by camera_changed."""
         self._run(f"viewer.setGrid({json.dumps(enabled)})")
+
+    # ---- Animation ---------------------------------------------------------
+    # A scene is a DESCRIPTOR — keyframes over flat parameters, see SCENES.md.
+    # It is loaded paused at t = 0 with that first instant already applied, so
+    # a host can show the opening pose without playing anything. With no scene
+    # loaded every transport call is a documented no-op.
+    #
+    # Playback runs inside the page, on its own animation frames — these calls
+    # only start and steer it, and the state comes back over the web channel.
+
+    def set_animation(self, descriptor: dict | None) -> None:
+        self._run(f"viewer.setAnimation({json.dumps(descriptor)})")
+
+    def play_animation(self) -> None:
+        self._run("viewer.playAnimation()")
+
+    def pause_animation(self) -> None:
+        self._run("viewer.pauseAnimation()")
+
+    def toggle_animation(self) -> None:
+        self._run("viewer.toggleAnimation()")
+
+    def stop_animation(self) -> None:
+        """Back to the first frame, paused."""
+        self._run("viewer.stopAnimation()")
+
+    def seek_animation(self, progress: float) -> None:
+        """progress is 0..1 — the scrub slider."""
+        self._run(f"viewer.seekAnimation({progress})")
+
+    def step_frame(self, delta: int) -> None:
+        """One frame at a time; +1 forward, -1 back. Pauses playback."""
+        self._run(f"viewer.stepFrame({int(delta)})")
+
+    def set_speed(self, speed: float) -> None:
+        self._run(f"viewer.setSpeed({speed})")
+
+    def jump_to_end(self) -> None:
+        """INSTANT mode — the end state without the flight."""
+        self._run("viewer.jumpToEnd()")
+
+    def animation_state(self, callback) -> None:
+        """Asynchronously deliver the playback state to `callback`.
+
+        The LIGHT widget accepts the same callback (and also returns the state
+        outright), so host code written this way drives either renderer.
+        """
+        self._run_json("viewer.animationState()", callback)
 
     # ---- Internals ---------------------------------------------------------
 

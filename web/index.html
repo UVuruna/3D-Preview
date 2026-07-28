@@ -19,13 +19,14 @@
     window.viewer = Preview3D.mount(container);
     container.focus();   // so the keyboard bindings work without a click first
 
-    // Inside QWebEngineView, push camera movement back to Python over the Qt
-    // web channel. In a plain browser `qt` is undefined and this is skipped —
-    // the same page serves both hosts.
+    // Inside QWebEngineView, push camera movement and playback state back to
+    // Python over the Qt web channel. In a plain browser `qt` is undefined and
+    // this is skipped — the same page serves both hosts.
     if (window.qt && window.qt.webChannelTransport) {
         new QWebChannel(qt.webChannelTransport, (channel) => {
             const bridge = channel.objects.bridge;
             window.viewer.onCameraChange((state) => bridge.reportCamera(state));
+            window.viewer.onAnimationChange((state) => bridge.reportAnimation(state));
         });
     }
 

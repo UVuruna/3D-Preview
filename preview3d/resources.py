@@ -27,3 +27,12 @@ def bundled_dir(name: str) -> Path:
 def load_shared_spec() -> dict:
     """The values both renderers must agree on — see shared/spec.json."""
     return json.loads((bundled_dir("shared") / "spec.json").read_text(encoding="utf-8"))
+
+
+def load_shared_scenes() -> list[dict]:
+    """The animation scenes that ship with the component — see SCENES.md.
+
+    The same file the web core bundles, so both renderers play the same scenes.
+    """
+    data = json.loads((bundled_dir("shared") / "scenes.json").read_text(encoding="utf-8"))
+    return data["scenes"]

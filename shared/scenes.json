@@ -1,0 +1,247 @@
+{
+  "_comment": "Animation scenes are DATA, never hardcoded choreography — a new one is written here without touching either renderer. Read by BOTH: the JS core imports this file at build time, the Python renderer reads it at run time. Format: SCENES.md.",
+
+  "scenes": [
+    {
+      "name": "turntable",
+      "label": "Turntable",
+      "duration": 8,
+      "loop": true,
+      "tracks": [
+        {
+          "channel": "camera.azimuth",
+          "keys": [{ "t": 0, "value": 45 }, { "t": 1, "value": 405 }]
+        },
+        {
+          "channel": "camera.elevation",
+          "keys": [{ "t": 0, "value": 25 }]
+        }
+      ]
+    },
+
+    {
+      "name": "tour",
+      "label": "View tour",
+      "duration": 12,
+      "loop": true,
+      "tracks": [
+        {
+          "channel": "camera.azimuth",
+          "keys": [
+            { "t": 0.00, "value": 0,   "ease": "ease-in-out" },
+            { "t": 0.15, "value": 0,   "ease": "ease-in-out" },
+            { "t": 0.33, "value": 90,  "ease": "ease-in-out" },
+            { "t": 0.50, "value": 180, "ease": "ease-in-out" },
+            { "t": 0.67, "value": 270, "ease": "ease-in-out" },
+            { "t": 0.84, "value": 270, "ease": "ease-in-out" },
+            { "t": 1.00, "value": 405 }
+          ]
+        },
+        {
+          "channel": "camera.elevation",
+          "keys": [
+            { "t": 0.00, "value": 0,      "ease": "ease-in-out" },
+            { "t": 0.67, "value": 0,      "ease": "ease-in-out" },
+            { "t": 0.84, "value": 88,     "ease": "ease-in-out" },
+            { "t": 1.00, "value": 35.264 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "The theory answer, animated: a cube seen down its body diagonal is a regular hexagon ONLY under orthographic projection, so the flight lands on azimuth 45 / elevation asin(1/sqrt3) and switches projection there.",
+      "name": "hexagon",
+      "label": "Hexagon reveal",
+      "duration": 6,
+      "loop": false,
+      "content": { "type": "cube", "colors": "poles" },
+      "tracks": [
+        {
+          "channel": "camera.azimuth",
+          "keys": [
+            { "t": 0, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.75, "value": 45 }
+          ]
+        },
+        {
+          "channel": "camera.elevation",
+          "keys": [
+            { "t": 0, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.75, "value": 35.264 }
+          ]
+        },
+        {
+          "channel": "camera.projection",
+          "keys": [
+            { "t": 0, "value": "perspective" },
+            { "t": 0.75, "value": "orthographic" }
+          ]
+        },
+        {
+          "channel": "camera.dolly",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.75, "value": 1, "ease": "ease-in-out" },
+            { "t": 1, "value": 1.2 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "Per-part opacity as a tweened parameter: the shell turns to glass and the core inside becomes visible, then comes back.",
+      "name": "xray",
+      "label": "X-ray shell",
+      "duration": 7,
+      "loop": true,
+      "content": {
+        "type": "cube",
+        "name": "shell",
+        "colors": "poles",
+        "children": [{ "type": "cube", "name": "core", "size": 0.45, "color": "#F5F5F5" }]
+      },
+      "tracks": [
+        {
+          "channel": "camera.azimuth",
+          "keys": [{ "t": 0, "value": 45 }, { "t": 1, "value": 405 }]
+        },
+        {
+          "channel": "camera.elevation",
+          "keys": [{ "t": 0, "value": 22 }]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:+x",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:-x",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:+y",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:-y",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:+z",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "shell/face:-z",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.3, "value": 0.12 },
+            { "t": 0.7, "value": 0.12, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "The owner's case from MODELS.md — three legend terms per axis tip, showing one at a time — driven by the timeline instead of by hand. Non-numeric values are stepped, so `group.show` needs no easing.",
+      "name": "legend",
+      "label": "Legend cycle",
+      "duration": 9,
+      "loop": true,
+      "content": {
+        "type": "axes",
+        "arms": [
+          { "axis": "+x", "label": ["East", "Istok", "E"] },
+          { "axis": "-x", "label": ["West", "Zapad", "W"] },
+          { "axis": "+y", "label": ["Zenith", "Zenit", "Up"] },
+          { "axis": "-y", "label": ["Nadir", "Nadir", "Down"] },
+          { "axis": "+z", "label": ["North", "Sever", "N"] },
+          { "axis": "-z", "label": ["South", "Jug", "S"] }
+        ]
+      },
+      "tracks": [
+        {
+          "channel": "camera.azimuth",
+          "keys": [{ "t": 0, "value": 25 }, { "t": 1, "value": 385 }]
+        },
+        {
+          "channel": "camera.elevation",
+          "keys": [{ "t": 0, "value": 18 }]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:+x/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:-x/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:+y/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:-y/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:+z/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        },
+        {
+          "channel": "group.show", "path": "axes/arm:-z/labels",
+          "keys": [
+            { "t": 0, "value": "label:0" },
+            { "t": 0.34, "value": "label:1" },
+            { "t": 0.67, "value": "label:2" }
+          ]
+        }
+      ]
+    }
+  ]
+}

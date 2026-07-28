@@ -15,6 +15,7 @@
   "neutral": {
     "joint": "#B3B3B3",
     "edges": "#F5F5F5",
+    "edgeOpacity": 0.35,
     "body": "#818CF8"
   },
 
@@ -37,5 +38,29 @@
     "orbitStep": 15,
     "panStep": 0.06,
     "zoomStep": 1.15
+  },
+
+  "animation": {
+    "_comment": "Playback is fixed-timestep so the same scene evaluates identically in both renderers: `fps` is the step rate AND the granularity of a single-frame step. `maxStep` caps the catch-up after a stall so a hidden tab does not fast-forward the scene.",
+
+    "fps": 30,
+    "maxStep": 0.25,
+    "speeds": [0.5, 1, 2],
+    "defaultSpeed": 1,
+    "defaultDuration": 6,
+    "defaultEasing": "linear",
+
+    "easings": ["linear", "ease-in", "ease-out", "ease-in-out", "step"],
+
+    "channels": {
+      "camera.azimuth":    { "path": false },
+      "camera.elevation":  { "path": false },
+      "camera.dolly":      { "path": false },
+      "camera.projection": { "path": false },
+      "part.opacity":      { "path": true },
+      "part.visible":      { "path": true },
+      "group.show":        { "path": true },
+      "grid":              { "path": false }
+    }
   }
 }

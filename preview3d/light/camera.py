@@ -20,7 +20,7 @@ FREE_VIEW = "free"
 PERSPECTIVE = "perspective"
 ORTHOGRAPHIC = "orthographic"
 _POLE_LIMIT = 89.99      # stops the orbit flipping over the poles
-_MIN_DISTANCE = 1e-3
+MIN_DISTANCE = 1e-3
 
 
 def view_direction(name: str) -> Vec3:
@@ -81,6 +81,16 @@ class Camera:
         self.azimuth = (self.azimuth + d_azimuth) % 360.0
         self.elevation = max(-_POLE_LIMIT, min(_POLE_LIMIT, self.elevation + d_elevation))
 
+    def set_orbit(self, azimuth: float, elevation: float) -> None:
+        """Look from an absolute direction, in degrees, at the same distance.
+
+        `orbit_by` is what a drag or an arrow key wants; this is what a snap
+        view or a timeline wants — a flat parameter meaning the same thing
+        whatever happened before it. Elevation is clamped short of the poles.
+        """
+        self.azimuth = azimuth % 360.0
+        self.elevation = max(-_POLE_LIMIT, min(_POLE_LIMIT, elevation))
+
     def pan_by(self, dx: float, dy: float) -> None:
         """Steps are fractions of the visible height, so panning feels the same at any zoom."""
         height = self.visible_height()
@@ -90,9 +100,9 @@ class Camera:
 
     def zoom_by(self, factor: float) -> None:
         if self.projection == ORTHOGRAPHIC:
-            self.ortho_height = max(self.ortho_height / factor, _MIN_DISTANCE)
+            self.ortho_height = max(self.ortho_height / factor, MIN_DISTANCE)
         else:
-            self.distance = max(self.distance / factor, _MIN_DISTANCE)
+            self.distance = max(self.distance / factor, MIN_DISTANCE)
 
     def set_projection(self, kind: str) -> None:
         """Swap projection while keeping the content the same size on screen."""
@@ -156,7 +166,7 @@ class Camera:
 
         self.target = add(add(scale(right, centre[0]), scale(up, centre[1])),
                           scale(forward, centre[2]))
-        self.distance = max(distance, _MIN_DISTANCE)
+        self.distance = max(distance, MIN_DISTANCE)
         self.look_along(direction)
         if self.projection == ORTHOGRAPHIC:
             half_height = (max(ys) - min(ys)) / 2

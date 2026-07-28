@@ -13,6 +13,7 @@ import { buildGrid, disposeGrid } from './grid.js';
 import { attachKeyboard } from './keyboard.js';
 import { collectParts, removePart, setPartOpacity, setPartVisible, showOnly } from './parts.js';
 import { FREE_VIEW, stepView, viewDirection } from './views.js';
+import { NO_ANIMATION, Timeline } from './animation.js';
 
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const WORLD_FORWARD = new THREE.Vector3(0, 0, 1);   // basis reference for a top/bottom view
@@ -81,6 +82,17 @@ export class Viewer {
         // re-frame; true once the user has moved the camera themselves.
         this._userFramed = false;
 
+        // Animation. The timeline drives flat parameters only (see animation.js);
+        // the two baselines are the framing it moves relative to, so a scene is
+        // written once and plays on content of any size.
+        this._timeline = null;
+        this._baseDistance = 1;
+        this._baseHeight = 1;
+        this._animationListeners = new Set();
+        this._animationPending = false;
+        this._lastAnimationAt = 0;
+        this._lastTickAt = 0;
+
         this._makeControls();
         this.setBackground(this.options.background);
         this._detachKeyboard = this.options.keyboard ? attachKeyboard(this, container) : null;
@@ -133,8 +145,16 @@ export class Viewer {
         this._clear();
         this._content.add(object);
         this._contentVersion += 1;
+        // A scene is written against the parts of specific content, so new
+        // content invalidates it — keeping it would mean driving paths that
+        // need not exist any more, and failing from inside show() rather than
+        // where the host could do anything about it. Load content first, scene
+        // second (SCENES.md).
+        const hadScene = this._timeline !== null;
+        this._timeline = null;
         this._rebuildGrid();
         this.fitView();
+        if (hadScene) this._notifyAnimation();
     }
 
     _clear() {
@@ -235,6 +255,16 @@ export class Viewer {
             Math.PI - POLE_EPSILON,
         );
         this.camera.position.copy(this.controls.target).add(offset.setFromSpherical(spherical));
+        this._markUserFramed();
+        this._afterCameraMove();
+    }
+
+    // Look from an absolute direction, in degrees, without changing how far
+    // away the camera is. The relative orbitBy() is what a drag or an arrow
+    // key wants; this is what a snap view or a timeline wants — a flat
+    // parameter that means the same thing whatever happened before it.
+    setOrbit(azimuth, elevation) {
+        this._positionCamera(azimuth, elevation, this.camera.position.distanceTo(this.controls.target));
         this._markUserFramed();
         this._afterCameraMove();
     }
@@ -371,14 +401,69 @@ export class Viewer {
         this.requestRender();
     }
 
+    // ---- Animation --------------------------------------------------------
+    // A scene is a DESCRIPTOR — keyframes over flat parameters, see SCENES.md.
+    // It is loaded paused at t = 0 with that first instant already applied, so
+    // a host can show the opening pose without playing anything.
+
+    setAnimation(descriptor) {
+        this._timeline = descriptor ? new Timeline(descriptor) : null;
+        if (this._timeline) this._reframeAnimation();
+        this._notifyAnimation();
+    }
+
+    playAnimation() { this._withTimeline((timeline) => timeline.play()); }
+
+    pauseAnimation() { this._withTimeline((timeline) => timeline.pause()); }
+
+    toggleAnimation() { this._withTimeline((timeline) => timeline.toggle()); }
+
+    // Back to the first frame, paused.
+    stopAnimation() { this._withTimeline((timeline) => timeline.stop()); }
+
+    // progress is 0..1 — the scrub slider.
+    seekAnimation(progress) { this._withTimeline((timeline) => timeline.seek(progress)); }
+
+    // One frame at a time; +1 forward, -1 back. Pauses playback.
+    stepFrame(delta) { this._withTimeline((timeline) => timeline.stepFrame(delta)); }
+
+    setSpeed(speed) { this._withTimeline((timeline) => timeline.setSpeed(speed)); }
+
+    // INSTANT mode — the end state without the flight.
+    jumpToEnd() { this._withTimeline((timeline) => timeline.jumpToEnd()); }
+
+    animationState() {
+        return this._timeline ? this._timeline.state() : NO_ANIMATION;
+    }
+
+    // Register a callback for playback state; returns an unsubscribe function.
+    // A non-looping scene reaching its end reports `playing: false` at
+    // `progress: 1` — that report IS the end-of-scene signal.
+    onAnimationChange(callback) {
+        this._animationListeners.add(callback);
+        callback(this.animationState());
+        return () => this._animationListeners.delete(callback);
+    }
+
     // ---- Render loop ------------------------------------------------------
 
     requestRender() {
         this._dirty = true;
     }
 
-    _tick() {
+    _tick(now) {
         this._raf = requestAnimationFrame(this._tick);
+        const stamp = now ?? performance.now();
+        const elapsed = this._lastTickAt ? (stamp - this._lastTickAt) / 1000 : 0;
+        this._lastTickAt = stamp;
+
+        let animating = false;
+        if (this._timeline && this._timeline.tick(elapsed)) {
+            this._applyTimeline();
+            this._animationPending = true;
+            animating = this._timeline.playing;
+        }
+
         const moved = this.controls.update();   // true while orbiting / damping
         if (moved) this._statePending = true;
         if (moved || this._dirty) {
@@ -386,14 +471,22 @@ export class Viewer {
             this.renderer.render(this.scene, this.camera);
         }
         // Notify at a readable rate rather than every frame — a 60 Hz stream
-        // over the Qt bridge buys nothing a readout can show.
-        if (this._statePending) {
-            const now = performance.now();
-            if (!moved || now - this._lastStateAt >= this.options.stateInterval) {
-                this._lastStateAt = now;
-                this._statePending = moved;
-                this._emitCameraState();
-            }
+        // over the Qt bridge buys nothing a readout can show. `streaming` is
+        // what makes that a rate limit rather than a mute: the last report of a
+        // movement always goes out immediately.
+        this._emitPending(stamp, moved || animating);
+    }
+
+    _emitPending(now, streaming) {
+        if (this._statePending && (!streaming || now - this._lastStateAt >= this.options.stateInterval)) {
+            this._lastStateAt = now;
+            this._statePending = streaming;
+            this._emitCameraState();
+        }
+        if (this._animationPending && (!streaming || now - this._lastAnimationAt >= this.options.stateInterval)) {
+            this._lastAnimationAt = now;
+            this._animationPending = streaming;
+            this._emitAnimationState();
         }
     }
 
@@ -407,8 +500,10 @@ export class Viewer {
         // Framing is aspect-dependent, so a narrower container clips content
         // that used to fit. Re-frame — but only while the framing is still
         // ours: once the user has orbited, panned or zoomed, their view is
-        // theirs and a resize must not throw it away.
-        if (this._userFramed) this.requestRender();
+        // theirs and a resize must not throw it away. A playing scene owns the
+        // camera outright, so it always re-frames.
+        if (this._timeline) this._reframeAnimation();
+        else if (this._userFramed) this.requestRender();
         else this.fitView();
     }
 
@@ -419,6 +514,7 @@ export class Viewer {
         this._observer.disconnect();
         this._detachKeyboard?.();
         this._cameraListeners.clear();
+        this._animationListeners.clear();
         if (this._grid) disposeGrid(this._grid);
         this._clear();
         this.controls.dispose();
@@ -493,6 +589,111 @@ export class Viewer {
     _emitCameraState() {
         const state = this.cameraState();
         for (const listener of this._cameraListeners) listener(state);
+    }
+
+    _notifyAnimation() {
+        this._lastAnimationAt = performance.now();
+        this._animationPending = false;
+        this._emitAnimationState();
+    }
+
+    _emitAnimationState() {
+        const state = this.animationState();
+        for (const listener of this._animationListeners) listener(state);
+    }
+
+    // Every transport command lands the same way: change the clock, apply the
+    // new instant, report it. With no scene loaded a press is a documented
+    // no-op — the transport is simply inert until setAnimation().
+    _withTimeline(action) {
+        if (!this._timeline) return;
+        action(this._timeline);
+        this._applyTimeline();
+        this._notifyAnimation();
+    }
+
+    // Frame the content as the presets would, and remember that framing: the
+    // timeline's camera.dolly is a factor OF it, so one scene descriptor plays
+    // correctly on a 1-unit cube and on a 100-unit model alike.
+    //
+    // Both baselines come from ONE quantity on purpose. Deriving the
+    // orthographic height from its own silhouette fit instead would make a
+    // scene that switches projection mid-flight jump in size at the switch.
+    _reframeAnimation() {
+        this.resetView();
+        const tan = Math.tan(THREE.MathUtils.degToRad(this.options.fov / 2));
+        this._baseDistance = Math.max(
+            this.camera.position.distanceTo(this.controls.target), MIN_FIT_DISTANCE,
+        );
+        this._baseHeight = 2 * tan * this._baseDistance;
+        this._applyTimeline();
+        this._notifyCamera(true);
+    }
+
+    _applyTimeline() {
+        let azimuth = null;
+        let elevation = null;
+        let dolly = null;
+
+        for (const { channel, path, value } of this._timeline.values()) {
+            switch (channel) {
+                case 'camera.azimuth': azimuth = value; break;
+                case 'camera.elevation': elevation = value; break;
+                case 'camera.dolly': dolly = value; break;
+                case 'camera.projection': this.setProjection(value); break;
+                case 'part.opacity': setPartOpacity(this._content, path, value); break;
+                case 'part.visible': setPartVisible(this._content, path, value); break;
+                case 'group.show': showOnly(this._content, path, value); break;
+                case 'grid': if (value !== this.gridEnabled) this.setGrid(value); break;
+                default: throw new Error(`Viewer cannot apply channel '${channel}'`);
+            }
+        }
+        // A scene with no camera tracks leaves the camera to the user.
+        if (azimuth !== null || elevation !== null || dolly !== null) {
+            this._placeCamera(azimuth, elevation, dolly);
+        }
+        this.requestRender();
+    }
+
+    _placeCamera(azimuth, elevation, dolly) {
+        const current = this.cameraState();
+        const zoom = dolly ?? 1;
+        const orthographic = this.camera.isOrthographicCamera;
+
+        // Apparent size is distance under perspective and frustum height under
+        // orthographic — the same split zoomBy() makes, so dolly means one
+        // thing in both projections and in both renderers.
+        this._positionCamera(
+            azimuth ?? current.azimuth,
+            elevation ?? current.elevation,
+            orthographic ? this._baseDistance : this._baseDistance / zoom,
+        );
+        this.camera.zoom = orthographic ? zoom : 1;
+        if (orthographic) this._setOrthoHeight(this._baseHeight);
+        this.camera.near = this._baseDistance / 100;
+        this.camera.far = this._baseDistance * 100;
+        this.camera.updateProjectionMatrix();
+        this.controls.update();
+        this.viewName = FREE_VIEW;      // the scene is looking, not a preset
+        this._statePending = true;
+    }
+
+    // Absolute placement from angles, shared by setOrbit() and the timeline.
+    _positionCamera(azimuth, elevation, distance) {
+        const target = this.controls.target;
+        const theta = THREE.MathUtils.degToRad(azimuth);
+        const phi = THREE.MathUtils.clamp(
+            THREE.MathUtils.degToRad(elevation),
+            -Math.PI / 2 + POLE_EPSILON,
+            Math.PI / 2 - POLE_EPSILON,
+        );
+        const horizontal = Math.cos(phi) * distance;
+        this.camera.position.set(
+            target.x + horizontal * Math.sin(theta),
+            target.y + Math.sin(phi) * distance,
+            target.z + horizontal * Math.cos(theta),
+        );
+        this.camera.up.copy(WORLD_UP);
     }
 
     _rebuildGrid() {

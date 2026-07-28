@@ -138,7 +138,10 @@ def build_cube(spec: dict) -> Node:
         root.add(body)
 
     if edges:
-        node = Node(name="edges")
+        # The wireframe is deliberately faint, and how faint is a shared value:
+        # the web core puts it on the line material, this on the node, and both
+        # therefore report the same opacity for the same part.
+        node = Node(name="edges", opacity=float(_NEUTRAL["edgeOpacity"]))
         node.segments = _cube_edges(size, _NEUTRAL["edges"])
         root.add(node)
     return root

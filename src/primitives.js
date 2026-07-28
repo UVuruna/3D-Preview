@@ -181,7 +181,9 @@ function buildCube(spec) {
     if (edges) {
         group.add(named(new THREE.LineSegments(
             new THREE.EdgesGeometry(new THREE.BoxGeometry(size, size, size)),
-            new THREE.LineBasicMaterial({ color: NEUTRAL.edges, transparent: true, opacity: 0.35 }),
+            new THREE.LineBasicMaterial({
+                color: NEUTRAL.edges, transparent: true, opacity: NEUTRAL.edgeOpacity,
+            }),
         ), 'edges'));
     }
     return group;

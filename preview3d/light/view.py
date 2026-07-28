@@ -7,16 +7,20 @@ RENDERERS.md for the full comparison and how to choose.
 """
 
 import logging
+import math
+import time
 
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget
 
 from ..resources import load_shared_spec
 from . import scene as scene_ops
+from .animation import ANIMATION_DEFAULTS, NO_ANIMATION, Timeline
 from .camera import (
     CAMERA_DEFAULTS,
     FREE_VIEW,
+    MIN_DISTANCE,
     ORTHOGRAPHIC,
     PERSPECTIVE,
     VIEW_ORDER,
@@ -43,9 +47,12 @@ class Preview3DLightWidget(QWidget):
         camera_changed(dict): {azimuth, elevation, distance, view, projection,
             grid, gridStep, background, contentVersion} — the same payload the
             web-backed widget emits, so a host's readout code works with either.
+        animation_changed(dict): {scene, label, playing, time, duration,
+            progress, speed, frame, frames, loop} — likewise.
     """
 
     camera_changed = Signal(dict)
+    animation_changed = Signal(dict)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -64,6 +71,17 @@ class Preview3DLightWidget(QWidget):
         self._drag_origin: QPoint | None = None
         self._drag_button = Qt.MouseButton.NoButton
 
+        # Animation. The timeline drives flat parameters only (see animation.py);
+        # the two baselines are the framing it moves relative to, so one scene
+        # descriptor plays correctly on content of any size.
+        self._timeline: Timeline | None = None
+        self._base_distance = 1.0
+        self._base_height = 1.0
+        self._last_tick = 0.0
+        self._clock = QTimer(self)
+        self._clock.setInterval(round(1000 / int(ANIMATION_DEFAULTS["fps"])))
+        self._clock.timeout.connect(self._on_clock)
+
         self._apply_background()
 
     # ---- Content -----------------------------------------------------------
@@ -73,8 +91,18 @@ class Preview3DLightWidget(QWidget):
         self._root = Node(name="content")
         self._root.add(build_primitive(spec))
         self._content_version += 1
+        # A scene is written against the parts of specific content, so new
+        # content invalidates it — keeping it would mean driving paths that need
+        # not exist any more, and raising from inside show_scene() rather than
+        # where the host could do anything about it. Load content first, scene
+        # second (SCENES.md).
+        had_scene = self._timeline is not None
+        self._timeline = None
+        self._sync_clock()
         self._rebuild_grid()
         self.reset_view()
+        if had_scene:
+            self._emit_animation()
 
     def show_axes(self, arms: list[dict] | None = None, arm_length: float = 1.0) -> None:
         spec: dict = {"type": "axes", "armLength": arm_length}
@@ -142,6 +170,12 @@ class Preview3DLightWidget(QWidget):
         self._mark_user_framed()
         self._changed()
 
+    def set_orbit(self, azimuth: float, elevation: float) -> None:
+        """Look from an absolute direction, in degrees, at the same distance."""
+        self._camera.set_orbit(azimuth, elevation)
+        self._mark_user_framed()
+        self._changed()
+
     def pan_by(self, dx: float, dy: float) -> None:
         self._camera.pan_by(dx, dy)
         self._mark_user_framed()
@@ -180,6 +214,59 @@ class Preview3DLightWidget(QWidget):
         self._rebuild_grid()
         self._changed()
 
+    # ---- Animation ---------------------------------------------------------
+    # A scene is a DESCRIPTOR — keyframes over flat parameters, see SCENES.md.
+    # It is loaded paused at t = 0 with that first instant already applied, so
+    # a host can show the opening pose without playing anything. With no scene
+    # loaded every transport call is a documented no-op.
+
+    def set_animation(self, descriptor: dict | None) -> None:
+        self._timeline = Timeline(descriptor) if descriptor else None
+        self._sync_clock()
+        if self._timeline is not None:
+            self._reframe_animation()
+        self._emit_animation()
+
+    def play_animation(self) -> None:
+        self._with_timeline(Timeline.play)
+
+    def pause_animation(self) -> None:
+        self._with_timeline(Timeline.pause)
+
+    def toggle_animation(self) -> None:
+        self._with_timeline(Timeline.toggle)
+
+    def stop_animation(self) -> None:
+        """Back to the first frame, paused."""
+        self._with_timeline(Timeline.stop)
+
+    def seek_animation(self, progress: float) -> None:
+        """progress is 0..1 — the scrub slider."""
+        self._with_timeline(lambda timeline: timeline.seek(progress))
+
+    def step_frame(self, delta: int) -> None:
+        """One frame at a time; +1 forward, -1 back. Pauses playback."""
+        self._with_timeline(lambda timeline: timeline.step_frame(delta))
+
+    def set_speed(self, speed: float) -> None:
+        self._with_timeline(lambda timeline: timeline.set_speed(speed))
+
+    def jump_to_end(self) -> None:
+        """INSTANT mode — the end state without the flight."""
+        self._with_timeline(Timeline.jump_to_end)
+
+    def animation_state(self, callback=None) -> dict:
+        """Return the playback state — and also pass it to `callback` if given.
+
+        Same both-shapes contract as `list_parts`: the web-backed widget can
+        only answer asynchronously, so host code written against it uses a
+        callback, and supporting both is what keeps the two interchangeable.
+        """
+        state = self._timeline.state() if self._timeline is not None else dict(NO_ANIMATION)
+        if callback is not None:
+            callback(state)
+        return state
+
     # ---- Qt events ---------------------------------------------------------
 
     def paintEvent(self, event):
@@ -195,7 +282,10 @@ class Preview3DLightWidget(QWidget):
         self._camera.aspect = self.width() / max(1, self.height())
         # Framing is aspect-dependent, so a narrower widget clips content that
         # used to fit — but once the view is the user's, a resize leaves it be.
-        if self._user_framed:
+        # A loaded scene owns the camera outright, so it always re-frames.
+        if self._timeline is not None:
+            self._reframe_animation()
+        elif self._user_framed:
             self.update()
         else:
             self._fit(None)
@@ -284,3 +374,96 @@ class Preview3DLightWidget(QWidget):
     def _changed(self) -> None:
         self.update()
         self.camera_changed.emit(self.camera_state())
+
+    # ---- Animation internals -----------------------------------------------
+
+    def _emit_animation(self) -> None:
+        self.animation_changed.emit(self.animation_state())
+
+    def _on_clock(self) -> None:
+        now = time.perf_counter()
+        elapsed, self._last_tick = now - self._last_tick, now
+        if not self._timeline.tick(elapsed):
+            return
+        self._apply_timeline()
+        self._changed()
+        self._emit_animation()
+        if not self._timeline.playing:
+            self._clock.stop()      # the scene ended on its own
+
+    # Every transport command lands the same way: change the clock, apply the
+    # new instant, report it.
+    def _with_timeline(self, action) -> None:
+        if self._timeline is None:
+            return
+        action(self._timeline)
+        self._sync_clock()
+        self._apply_timeline()
+        self._changed()
+        self._emit_animation()
+
+    def _sync_clock(self) -> None:
+        """The timer runs only while a scene plays — a paused viewer is idle."""
+        if self._timeline is not None and self._timeline.playing:
+            if not self._clock.isActive():
+                self._last_tick = time.perf_counter()
+                self._clock.start()
+        else:
+            self._clock.stop()
+
+    def _reframe_animation(self) -> None:
+        """Frame the content as the presets would, and remember that framing.
+
+        The timeline's `camera.dolly` is a factor OF this baseline, which is
+        what lets one scene descriptor play correctly on a 1-unit cube and on a
+        100-unit model alike. Both baselines come from ONE quantity on purpose:
+        deriving the orthographic height from its own silhouette fit instead
+        would make a scene that switches projection mid-flight jump in size.
+        """
+        self.reset_view()
+        self._base_distance = max(self._camera.distance, MIN_DISTANCE)
+        self._base_height = 2 * math.tan(math.radians(self._camera.fov / 2)) * self._base_distance
+        self._apply_timeline()
+        self._changed()
+
+    def _apply_timeline(self) -> None:
+        azimuth = elevation = dolly = None
+        for entry in self._timeline.values():
+            channel, path, value = entry["channel"], entry["path"], entry["value"]
+            if channel == "camera.azimuth":
+                azimuth = value
+            elif channel == "camera.elevation":
+                elevation = value
+            elif channel == "camera.dolly":
+                dolly = value
+            elif channel == "camera.projection":
+                self._camera.set_projection(value)
+            elif channel == "part.opacity":
+                scene_ops.set_part_opacity(self._root, path, value)
+            elif channel == "part.visible":
+                scene_ops.set_part_visible(self._root, path, value)
+            elif channel == "group.show":
+                scene_ops.show_only(self._root, path, value)
+            elif channel == "grid":
+                if value != self._grid_enabled:
+                    self.set_grid(value)
+            else:
+                raise ValueError(f"Preview3DLightWidget cannot apply channel {channel!r}")
+
+        # A scene with no camera tracks leaves the camera to the user.
+        if azimuth is not None or elevation is not None or dolly is not None:
+            self._place_camera(azimuth, elevation, dolly)
+        self.update()
+
+    def _place_camera(self, azimuth, elevation, dolly) -> None:
+        camera = self._camera
+        zoom = 1.0 if dolly is None else dolly
+        camera.set_orbit(camera.azimuth if azimuth is None else azimuth,
+                         camera.elevation if elevation is None else elevation)
+        # Apparent size is distance under perspective and frustum height under
+        # orthographic — the same split zoom_by() makes, so dolly means one
+        # thing in both projections and in both renderers.
+        camera.distance = (self._base_distance if camera.projection == ORTHOGRAPHIC
+                           else self._base_distance / zoom)
+        camera.ortho_height = self._base_height / zoom
+        self._view_name = FREE_VIEW      # the scene is looking, not a preset

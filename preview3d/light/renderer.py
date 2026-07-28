@@ -184,7 +184,11 @@ def paint_scene(painter: QPainter, root: Node, camera, width: int, height: int,
         elif kind == "line":
             start, end, line_width = data
             painted = QColor(color)
-            painted.setAlphaF(opacity * 0.45)
+            # No extra fading here: how faint a wireframe is belongs to the part
+            # that owns it (shared/spec.json), not to the painter — a second
+            # factor applied at draw time is invisible to `list_parts` and made
+            # the two renderers disagree about a part they both reported.
+            painted.setAlphaF(opacity)
             item = _line_item(start, end, camera, width, height, painted, line_width)
         else:
             item = _label_item(data, camera, width, height, color, opacity)
