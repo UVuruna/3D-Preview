@@ -14,11 +14,18 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
+    QSlider,
     QVBoxLayout,
     QWidget,
 )
 
-from preview3d import Preview3DLightWidget, Preview3DWidget
+from preview3d import (
+    NO_ANIMATION,
+    Preview3DLightWidget,
+    Preview3DWidget,
+    load_shared_scenes,
+    load_shared_spec,
+)
 
 from .flow_layout import FlowLayout, flow_size_policy
 from .parts_panel import PartsPanel
@@ -77,6 +84,22 @@ DEMO_SCENES = [
     },
 ]
 
+# The animation scenes ship with the component as DATA — the demo plays the
+# very same descriptors both renderers read (shared/scenes.json, SCENES.md).
+ANIMATIONS = load_shared_scenes()
+SPEEDS = load_shared_spec()["animation"]["speeds"]
+
+# Words rather than media glyphs: the bundled Inter subset has no ⏮ / ⏯ / ⏭,
+# and a missing glyph in the demo would read as a broken button.
+TRANSPORT = [
+    ("stop", "Restart", "Back to the first frame"),
+    ("back", "-1", "Previous frame"),
+    ("play", "Play", "Play / pause"),
+    ("forward", "+1", "Next frame"),
+    ("end", "End", "Jump straight to the end state (instant mode)"),
+]
+SCRUB_STEPS = 1000     # slider resolution; the scene's own frame count drives stepping
+
 VIEW_BUTTONS = [
     ("iso", "Iso"), ("front", "Front"), ("right", "Right"), ("back", "Back"),
     ("left", "Left"), ("top", "Top"), ("bottom", "Bottom"),
@@ -117,8 +140,12 @@ class DemoWindow(QWidget):
         self._background_index = 0
         self._content_version = None
         self._spec = None            # replayed when the renderer is swapped
+        self._animation = None       # likewise — the loaded scene descriptor
+        self._playing = False
+        self._syncing_scrub = False  # tells the slider's own signal from a report
 
         self.viewer.camera_changed.connect(self._on_camera_changed)
+        self.viewer.animation_changed.connect(self._on_animation_changed)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(*[THEME["space_l"]] * 4)
@@ -131,6 +158,9 @@ class DemoWindow(QWidget):
         body.addWidget(self._build_panel())
         root.addLayout(body)
 
+        # The LIGHT widget reports playback only once a scene is set, so the
+        # transport starts from the shared "nothing loaded" state either way.
+        self._on_animation_changed(dict(NO_ANIMATION))
         self._scene_buttons.buttons()[1].click()   # open on the labelled compass
 
     # ---- Layout ------------------------------------------------------------
@@ -217,6 +247,9 @@ class DemoWindow(QWidget):
         self._load_button.clicked.connect(self._load_model)
         layout.addWidget(self._load_button)
 
+        layout.addWidget(self._section("ANIMATION"))
+        self._build_animation(layout)
+
         layout.addWidget(self._section("VIEW"))
         self._view_buttons = self._toggle_row(
             layout, VIEW_BUTTONS, columns=4, on_click=self.viewer.set_view
@@ -257,6 +290,57 @@ class DemoWindow(QWidget):
         layout.addWidget(self._build_legend())
         layout.addStretch()
         return panel
+
+    # Scene picker, transport, scrub and speed. Every control here is one call
+    # into `self.viewer` — and both renderers answer the same five methods, so
+    # nothing in this section knows or cares which one is mounted.
+    def _build_animation(self, layout) -> None:
+        self._animation_buttons = QButtonGroup(self)
+        scenes = QGridLayout()
+        scenes.setSpacing(THEME["space_s"])
+        for index, scene in enumerate(ANIMATIONS):
+            button = QPushButton(scene.get("label", scene["name"]))
+            button.setObjectName("Compact")
+            button.setCheckable(True)
+            button.setProperty("key", scene["name"])
+            button.clicked.connect(lambda _, s=scene: self._play_animation(s))
+            self._animation_buttons.addButton(button, index)
+            scenes.addWidget(button, index // 2, index % 2)
+        layout.addLayout(scenes)
+
+        handlers = {
+            "stop": lambda: self.viewer.stop_animation(),
+            "back": lambda: self.viewer.step_frame(-1),
+            "play": lambda: self.viewer.toggle_animation(),
+            "forward": lambda: self.viewer.step_frame(1),
+            "end": lambda: self.viewer.jump_to_end(),
+        }
+        transport = QHBoxLayout()
+        transport.setSpacing(THEME["space_s"])
+        self._transport = {}
+        for key, label, tip in TRANSPORT:
+            button = QPushButton(label)
+            button.setObjectName("Compact")
+            button.setToolTip(tip)
+            button.clicked.connect(lambda _, k=key: self._with_focus(handlers[k]))
+            transport.addWidget(button)
+            self._transport[key] = button
+        layout.addLayout(transport)
+
+        self._scrub = QSlider(Qt.Orientation.Horizontal)
+        self._scrub.setRange(0, SCRUB_STEPS)
+        self._scrub.setToolTip("Scrub through the scene")
+        self._scrub.valueChanged.connect(self._on_scrub)
+        layout.addWidget(self._scrub)
+
+        self._speed_buttons = self._toggle_row(
+            layout, [(str(speed), f"{speed:g}x") for speed in SPEEDS],
+            columns=len(SPEEDS), on_click=lambda key: self.viewer.set_speed(float(key)),
+        )
+
+        self._animation_readout = QLabel()
+        self._animation_readout.setObjectName("Readout")
+        layout.addWidget(self._animation_readout)
 
     def _toggle_row(self, layout, entries, columns, on_click) -> QButtonGroup:
         group = QButtonGroup(self)
@@ -307,8 +391,11 @@ class DemoWindow(QWidget):
         factory = next(f for k, _, f, _ in RENDERERS if k == key)
         supports_files = next(s for k, _, _, s in RENDERERS if k == key)
 
+        was_playing = self._playing      # reported state is about to be reset
+
         old = self.viewer
         old.camera_changed.disconnect(self._on_camera_changed)
+        old.animation_changed.disconnect(self._on_animation_changed)
         self._stage_layout.removeWidget(old)
         old.deleteLater()
 
@@ -316,6 +403,7 @@ class DemoWindow(QWidget):
         self._sync_toggle(self._renderer_buttons, key)
         self.viewer = factory()
         self.viewer.camera_changed.connect(self._on_camera_changed)
+        self.viewer.animation_changed.connect(self._on_animation_changed)
         self._stage_layout.addWidget(self.viewer)
         self.parts.set_viewer(self.viewer)
 
@@ -327,22 +415,82 @@ class DemoWindow(QWidget):
         self._apply_background()
         if self._spec is not None:
             self.viewer.show_scene(self._spec)
+        # Carry the scene across the swap — comparing the two renderers on the
+        # same animation is the point of having the switch at all.
+        if self._animation is not None:
+            self.viewer.set_animation(self._animation)
+            if was_playing:
+                self.viewer.play_animation()
+        else:
+            self._on_animation_changed(dict(NO_ANIMATION))
         self._grid_button.setChecked(False)
         self.viewer.setFocus()
 
     def _show_scene(self, spec: dict) -> None:
         self._spec = spec
+        # New content need not contain the parts a loaded scene drives, so
+        # choosing content clears the animation rather than letting it fail on
+        # a path that no longer exists.
+        self._clear_animation()
         self._with_focus(self.viewer.show_scene, spec)
 
     def _load_model(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Load 3D model", "", MODEL_FILTER)
         if not path:
             return
-        self._scene_buttons.setExclusive(False)
-        for button in self._scene_buttons.buttons():
-            button.setChecked(False)
-        self._scene_buttons.setExclusive(True)
+        self._clear_checks(self._scene_buttons)
+        self._clear_animation()
         self._with_focus(self.viewer.load_model, path)
+
+    # ---- Animation ---------------------------------------------------------
+
+    def _play_animation(self, descriptor: dict) -> None:
+        content = descriptor.get("content")
+        if content is not None:
+            # The scene ships the content it was written for — a host-level
+            # convention, not a timeline channel (see SCENES.md).
+            self._spec = content
+            self.viewer.show_scene(content)
+            self._clear_checks(self._scene_buttons)
+        self._animation = descriptor
+        self._sync_toggle(self._animation_buttons, descriptor["name"])
+        self.viewer.set_animation(descriptor)
+        self._with_focus(self.viewer.play_animation)
+
+    # Only the panel's own state: showing content clears the loaded scene inside
+    # the viewer itself, and the report that follows resets the transport.
+    def _clear_animation(self) -> None:
+        self._animation = None
+        self._clear_checks(self._animation_buttons)
+
+    def _on_scrub(self, value: int) -> None:
+        if self._syncing_scrub:
+            return
+        self.viewer.seek_animation(value / SCRUB_STEPS)
+
+    def _on_animation_changed(self, state: dict) -> None:
+        loaded = state["scene"] is not None
+        self._playing = state["playing"]
+        for button in self._transport.values():
+            button.setEnabled(loaded)
+        self._transport["play"].setText("Pause" if state["playing"] else "Play")
+        self._scrub.setEnabled(loaded)
+
+        # The slider is both an input and a readout; without the guard its own
+        # setValue would be indistinguishable from the user dragging it.
+        self._syncing_scrub = True
+        self._scrub.setValue(round(state["progress"] * SCRUB_STEPS))
+        self._syncing_scrub = False
+
+        if not loaded:
+            self._animation_readout.setText("No scene loaded — pick one above.")
+            return
+        self._sync_toggle(self._speed_buttons, f"{state['speed']:g}")
+        self._animation_readout.setText(
+            f"{state['label']}{' · loop' if state['loop'] else ''}\n"
+            f"{state['time']:.1f} / {state['duration']:.0f} s\n"
+            f"Frame  {state['frame']} / {state['frames']}"
+        )
 
     def _toggle_grid(self, enabled: bool) -> None:
         self._with_focus(self.viewer.set_grid, enabled)
@@ -381,3 +529,6 @@ class DemoWindow(QWidget):
         for button in group.buttons():
             button.setChecked(button.property("key") == key)
         group.setExclusive(True)
+
+    def _clear_checks(self, group: QButtonGroup) -> None:
+        self._sync_toggle(group, None)

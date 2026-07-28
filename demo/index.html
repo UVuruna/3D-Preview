@@ -93,12 +93,17 @@
     button.on:hover { background: var(--accent); }
     button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25); }
     input[type="file"] { display: none; }
-    #readout {
+    #readout, #playback {
         font-size: 13px;
         line-height: 20px;
         color: var(--text-primary);
         font-variant-numeric: tabular-nums;
     }
+    .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-s); }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-s); }
+    input[type="range"].scrub { width: 100%; accent-color: var(--accent-strong); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button:disabled:hover { background: var(--surface-2); }
     #parts { display: flex; flex-direction: column; gap: 2px; }
     .part { display: flex; align-items: center; gap: var(--space-s); font-size: 13px; }
     .part .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -130,6 +135,13 @@
         <h2>SCENE</h2>
         <div class="grid2" id="scenes"></div>
         <label class="file">Load GLB file…<input type="file" id="file-model" accept=".glb,.gltf"></label>
+        <h2>ANIMATION</h2>
+        <div class="grid2" id="animations"></div>
+        <div class="grid5" id="transport"></div>
+        <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0"
+               title="Scrub through the scene" aria-label="Scrub through the scene">
+        <div class="grid3" id="speeds"></div>
+        <div id="playback"></div>
         <h2>VIEW</h2>
         <div class="grid4" id="views"></div>
         <h2>PROJECTION</h2>
@@ -214,7 +226,7 @@
     const sceneButtons = buttonRow(
         document.getElementById('scenes'),
         SCENES.map((s, i) => ({ key: String(i), label: s.name })),
-        (key) => { mark(sceneButtons, key); viewer.show(SCENES[Number(key)].spec); },
+        (key) => { mark(sceneButtons, key); clearAnimation(); viewer.show(SCENES[Number(key)].spec); },
     );
     const viewButtons = buttonRow(
         document.getElementById('views'),
@@ -244,6 +256,7 @@
         const file = event.target.files[0];
         if (!file) return;
         mark(sceneButtons, null);
+        clearAnimation();
         const bytes = new Uint8Array(await file.arrayBuffer());
         let binary = '';
         for (const b of bytes) binary += String.fromCharCode(b);
@@ -258,6 +271,85 @@
         link.click();
         URL.revokeObjectURL(link.href);
     };
+
+    // ---- Animation --------------------------------------------------------
+    // Preview3D.SCENES are the descriptors from shared/scenes.json — the very
+    // same ones the Python renderers play (SCENES.md).
+    const TRANSPORT = [
+        { key: 'stop', label: 'Restart', title: 'Back to the first frame', run: () => viewer.stopAnimation() },
+        { key: 'back', label: '-1', title: 'Previous frame', run: () => viewer.stepFrame(-1) },
+        { key: 'play', label: 'Play', title: 'Play / pause', run: () => viewer.toggleAnimation() },
+        { key: 'forward', label: '+1', title: 'Next frame', run: () => viewer.stepFrame(1) },
+        { key: 'end', label: 'End', title: 'Jump straight to the end state (instant mode)', run: () => viewer.jumpToEnd() },
+    ];
+
+    const scrub = document.getElementById('scrub');
+    let syncingScrub = false;    // tells the slider's own event from a report
+
+    const animationButtons = buttonRow(
+        document.getElementById('animations'),
+        Preview3D.SCENES.map((s) => ({ key: s.name, label: s.label ?? s.name })),
+        (key) => playAnimation(Preview3D.SCENES.find((s) => s.name === key)),
+    );
+    const transportButtons = buttonRow(
+        document.getElementById('transport'),
+        TRANSPORT.map((t) => ({ key: t.key, label: t.label })),
+        (key) => TRANSPORT.find((t) => t.key === key).run(),
+    );
+    transportButtons.forEach((button, index) => { button.title = TRANSPORT[index].title; });
+
+    const speedButtons = buttonRow(
+        document.getElementById('speeds'),
+        Preview3D.ANIMATION_DEFAULTS.speeds.map((s) => ({ key: String(s), label: `${s}x` })),
+        (key) => viewer.setSpeed(Number(key)),
+    );
+
+    function playAnimation(scene) {
+        // The scene ships the content it was written for — a host-level
+        // convention, not a timeline channel (see SCENES.md).
+        if (scene.content) {
+            mark(sceneButtons, null);
+            viewer.show(scene.content);
+        }
+        mark(animationButtons, scene.name);
+        viewer.setAnimation(scene);
+        viewer.playAnimation();
+    }
+
+    function clearAnimation() {
+        // New content need not contain the parts a loaded scene drives, so
+        // choosing content clears the animation rather than letting it fail on
+        // a path that no longer exists.
+        mark(animationButtons, null);
+        viewer.setAnimation(null);
+    }
+
+    scrub.oninput = () => { if (!syncingScrub) viewer.seekAnimation(scrub.value / scrub.max); };
+
+    viewer.onAnimationChange((state) => {
+        const loaded = state.scene !== null;
+        transportButtons.forEach((button) => { button.disabled = !loaded; });
+        transportButtons[TRANSPORT.findIndex((t) => t.key === 'play')].textContent =
+            state.playing ? 'Pause' : 'Play';
+        scrub.disabled = !loaded;
+
+        syncingScrub = true;
+        scrub.value = Math.round(state.progress * scrub.max);
+        syncingScrub = false;
+
+        const playback = document.getElementById('playback');
+        playback.style.whiteSpace = 'pre-line';
+        if (!loaded) {
+            playback.textContent = 'No scene loaded — pick one above.';
+            mark(speedButtons, null);
+            return;
+        }
+        mark(speedButtons, String(state.speed));
+        playback.textContent =
+            `${state.label}${state.loop ? '  ·  loop' : ''}\n`
+            + `${state.time.toFixed(1)} / ${state.duration.toFixed(0)} s`
+            + `  ·  frame ${state.frame} / ${state.frames}`;
+    });
 
     // ---- Parts list -------------------------------------------------------
     const partsHost = document.getElementById('parts');
