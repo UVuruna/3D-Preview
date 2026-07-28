@@ -13,17 +13,29 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
 
 from preview3d import Preview3DWidget
 
+from .flow_layout import FlowLayout, flow_size_policy
 from .parts_panel import PartsPanel
 from .theme import THEME
 
-WINDOW = {"title": "3D Preview — Demo", "width": 1360, "height": 880}
-PANEL_WIDTH = 340
+WINDOW = {
+    "title": "3D Preview — Demo",
+    "width": 1360,
+    "height": 880,
+    # The window must fit comfortably in half a screen. Nothing inside is
+    # allowed to dictate a larger floor: the panel scrolls, the legend wraps,
+    # and the stage may shrink to a thumbnail.
+    "min_width": 560,
+    "min_height": 420,
+}
+PANEL_WIDTH = 300
+STAGE_MINIMUM = (220, 160)
 
 # The demo scenes: parametric specs, not model files (root Rule #19).
 DEMO_SCENES = [
@@ -91,6 +103,7 @@ class DemoWindow(QWidget):
         super().__init__()
         self.setWindowTitle(WINDOW["title"])
         self.resize(WINDOW["width"], WINDOW["height"])
+        self.setMinimumSize(WINDOW["min_width"], WINDOW["min_height"])
 
         self.viewer = Preview3DWidget()
         self.parts = PartsPanel(self.viewer, THEME["space_s"])
@@ -106,7 +119,7 @@ class DemoWindow(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(THEME["space_m"])
-        body.addLayout(self._build_stage_column(), stretch=1)
+        body.addWidget(self._build_stage(), stretch=1)
         body.addWidget(self._build_panel())
         root.addLayout(body)
 
@@ -125,33 +138,51 @@ class DemoWindow(QWidget):
         header.addWidget(subtitle)
         return header
 
-    def _build_stage_column(self) -> QVBoxLayout:
-        column = QVBoxLayout()
-        column.setSpacing(THEME["space_s"])
-
+    def _build_stage(self) -> QFrame:
         # Padding insets the web view so the card's rounded corners stay clean —
         # a native web view always paints its own rectangle square.
         stage = QFrame()
         stage.setObjectName("Card")
-        stage_layout = QVBoxLayout(stage)
-        stage_layout.setContentsMargins(*[THEME["space_s"]] * 4)
-        stage_layout.addWidget(self.viewer)
-        column.addWidget(stage, stretch=1)
+        stage.setMinimumSize(*STAGE_MINIMUM)
+        layout = QVBoxLayout(stage)
+        layout.setContentsMargins(*[THEME["space_s"]] * 4)
+        layout.addWidget(self.viewer)
+        return stage
 
-        legend = QHBoxLayout()
-        legend.setSpacing(THEME["space_m"])
+    # The legend lives in the scrolling panel, not under the stage: wrapped onto
+    # eight rows in a narrow window it would eat the height the 3D view needs,
+    # and the view is the point of the window while the legend is reference.
+    def _build_legend(self) -> QWidget:
+        # A QHBoxLayout would report the SUM of the chips as its minimum and
+        # single-handedly set a ~1250 px floor on the window (see FlowLayout).
+        legend = QWidget()
+        legend.setSizePolicy(flow_size_policy())
+        flow = FlowLayout(legend, spacing=THEME["space_s"])
         for key, action in CONTROLS_LEGEND:
-            legend.addLayout(self._legend_item(key, action))
-        legend.addStretch()
-        column.addLayout(legend)
-        return column
+            flow.addWidget(self._legend_item(key, action))
+        return legend
 
     def _build_panel(self) -> QFrame:
+        # The panel scrolls as ONE column — controls and parts together. Without
+        # it the stacked sections set a ~770 px floor on the window's height,
+        # and nesting a second scroll area for the parts would give the user two
+        # scrollbars for one list.
         panel = QFrame()
         panel.setObjectName("Card")
         panel.setFixedWidth(PANEL_WIDTH)
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(*[THEME["space_m"]] * 4)
+        outer = QVBoxLayout(panel)
+        outer.setContentsMargins(*[THEME["space_s"]] * 4)
+        outer.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        outer.addWidget(scroll)
+
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(*[THEME["space_s"]] * 4)
         layout.setSpacing(THEME["space_s"])
 
         layout.addWidget(self._section("SCENE"))
@@ -205,7 +236,11 @@ class DemoWindow(QWidget):
         hint.setObjectName("ReadoutMuted")
         hint.setWordWrap(True)
         layout.addWidget(hint)
-        layout.addWidget(self.parts, stretch=1)
+        layout.addWidget(self.parts)
+
+        layout.addWidget(self._section("CONTROLS"))
+        layout.addWidget(self._build_legend())
+        layout.addStretch()
         return panel
 
     def _toggle_row(self, layout, entries, columns, on_click) -> QButtonGroup:
@@ -228,15 +263,17 @@ class DemoWindow(QWidget):
         label.setObjectName("SectionLabel")
         return label
 
-    def _legend_item(self, key: str, action: str) -> QHBoxLayout:
-        item = QHBoxLayout()
-        item.setSpacing(6)
+    def _legend_item(self, key: str, action: str) -> QWidget:
+        item = QWidget()
+        layout = QHBoxLayout(item)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
         key_label = QLabel(key)
         key_label.setObjectName("LegendKey")
         action_label = QLabel(action)
         action_label.setObjectName("LegendValue")
-        item.addWidget(key_label)
-        item.addWidget(action_label)
+        layout.addWidget(key_label)
+        layout.addWidget(action_label)
         return item
 
     # ---- Actions -----------------------------------------------------------

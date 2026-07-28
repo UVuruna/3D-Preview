@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QScrollArea,
     QSlider,
     QVBoxLayout,
     QWidget,
@@ -24,7 +23,12 @@ SOLO_ALL = -1        # solo index meaning "every child visible"
 
 
 class PartsPanel(QWidget):
-    """Scrollable list of parts, driving a Preview3DWidget."""
+    """List of parts, driving a Preview3DWidget.
+
+    Deliberately NOT scrollable itself — the whole control panel scrolls as one,
+    so the window has a single scrollbar and no nested scroll areas, and so the
+    panel contributes almost nothing to the window's minimum height.
+    """
 
     def __init__(self, viewer, spacing: int, parent=None):
         super().__init__(parent)
@@ -33,20 +37,10 @@ class PartsPanel(QWidget):
         self._solo: dict[str, int] = {}
         self._children: dict[str, list[str]] = {}
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
-
-        self._scroll = QScrollArea()
-        self._scroll.setWidgetResizable(True)
-        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._body = QWidget()
-        self._rows = QVBoxLayout(self._body)
+        self._rows = QVBoxLayout(self)
         self._rows.setContentsMargins(0, 0, 0, 0)
         self._rows.setSpacing(2)
         self._rows.addStretch()
-        self._scroll.setWidget(self._body)
-        outer.addWidget(self._scroll)
 
     def reload(self) -> None:
         """Rebuild for NEW content — solo state belongs to the old scene."""

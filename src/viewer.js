@@ -77,6 +77,9 @@ export class Viewer {
         this._cameraListeners = new Set();
         this._statePending = false;
         this._lastStateAt = 0;
+        // False while the framing is still the viewer's own, so a resize may
+        // re-frame; true once the user has moved the camera themselves.
+        this._userFramed = false;
 
         this._makeControls();
         this.setBackground(this.options.background);
@@ -232,7 +235,7 @@ export class Viewer {
             Math.PI - POLE_EPSILON,
         );
         this.camera.position.copy(this.controls.target).add(offset.setFromSpherical(spherical));
-        this.viewName = FREE_VIEW;
+        this._markUserFramed();
         this._afterCameraMove();
     }
 
@@ -246,7 +249,7 @@ export class Viewer {
             .addScaledVector(up, deltaY * height);
         this.camera.position.add(move);
         this.controls.target.add(move);
-        this.viewName = FREE_VIEW;
+        this._markUserFramed();
         this._afterCameraMove();
     }
 
@@ -260,6 +263,7 @@ export class Viewer {
             const offset = this.camera.position.clone().sub(target).divideScalar(factor);
             this.camera.position.copy(target).add(offset);
         }
+        this._userFramed = true;   // a zoom keeps the view direction, so not FREE
         this._afterCameraMove();
     }
 
@@ -296,8 +300,16 @@ export class Viewer {
         this.camera.updateProjectionMatrix();
         this.controls.target.copy(target);
         this.controls.update();
+        this._userFramed = false;
         this._notifyCamera(true);
         this.requestRender();
+    }
+
+    // The camera is now the user's, not ours: stop re-framing it on resize and
+    // report the view as free rather than as whichever preset it started from.
+    _markUserFramed() {
+        this._userFramed = true;
+        this.viewName = FREE_VIEW;
     }
 
     resetView() {
@@ -368,10 +380,7 @@ export class Viewer {
     _tick() {
         this._raf = requestAnimationFrame(this._tick);
         const moved = this.controls.update();   // true while orbiting / damping
-        if (moved) {
-            this._statePending = true;
-            this.viewName = FREE_VIEW;
-        }
+        if (moved) this._statePending = true;
         if (moved || this._dirty) {
             this._dirty = false;
             this.renderer.render(this.scene, this.camera);
@@ -395,7 +404,12 @@ export class Viewer {
         this.renderer.setSize(width, height);
         this._aspect = width / height;
         this._updateCameraAspect();
-        this.requestRender();
+        // Framing is aspect-dependent, so a narrower container clips content
+        // that used to fit. Re-frame — but only while the framing is still
+        // ours: once the user has orbited, panned or zoomed, their view is
+        // theirs and a resize must not throw it away.
+        if (this._userFramed) this.requestRender();
+        else this.fitView();
     }
 
     // ---- Lifecycle --------------------------------------------------------
@@ -429,6 +443,9 @@ export class Viewer {
         this.controls.dampingFactor = this.options.dampingFactor;
         if (target) this.controls.target.copy(target);
         this.controls.addEventListener('change', () => this.requestRender());
+        // 'start' fires on a real interaction, unlike 'change', which damping
+        // also raises for a frame or two after a programmatic camera move.
+        this.controls.addEventListener('start', () => this._markUserFramed());
         this.controls.update();
     }
 

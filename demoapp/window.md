@@ -22,8 +22,8 @@ Module-level constants (root Rule #4):
 
 | Constant | Contents |
 |----------|----------|
-| `WINDOW` | title and start size |
-| `PANEL_WIDTH` | control-panel width |
+| `WINDOW` | title, start size, and the minimum the layout must be able to reach |
+| `PANEL_WIDTH` / `STAGE_MINIMUM` | control-panel width; how small the 3D view may get |
 | `DEMO_SCENES` | `Axes gizmo`, `Compass axes` (multi-label arms), `Cube`, `Cube + core` — parametric specs, not model files (root Rule #19) |
 | `VIEW_BUTTONS` / `PROJECTIONS` | the preset and projection toggles |
 | `BACKGROUNDS` | the cycle: Dark → Light → Transparent |
@@ -61,5 +61,6 @@ The content-version check is why the parts list is correct after loading a **fil
 ## Design Decisions
 
 - **The stage card pads the web view by one spacing unit.** A native web view always paints its own rectangle square, so without the inset its corners would cover the card's rounded ones.
-- **The keyboard legend lives under the stage, not in the panel** — it is wide and static, and the panel's vertical space belongs to the parts list.
+- **The keyboard legend lives in the scrolling panel, not under the stage.** Under the stage it wraps onto eight rows in a narrow window and eats the height the 3D view needs — and the view is the point of the window while the legend is reference material.
+- **The whole panel scrolls as one column.** Stacked unscrolled, its sections set a ~770 px floor on the window's height; a second scroll area just for the parts would give the user two scrollbars for one list.
 - **Toggle states are never set optimistically.** A button reflects what the viewer reported, so a key press (`P`, `G`, Shift+arrows) updates the buttons exactly as a click would.

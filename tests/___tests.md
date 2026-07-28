@@ -19,6 +19,15 @@ Pins the fix for the resize white-flash reported 2026-07-28.
 
 **Why these assertions:** the tests check the **colour behind the canvas**, not a captured flash. The flash is a consequence of the colour, and a screen-grab race would be flaky — a programmatic resize does not reliably reproduce what an interactive drag does. Verified as a real pin: 3 of the 4 tests fail against the pre-fix code.
 
+### `test_window_minimum_size.py` — Demo Window Could Not Be Made Small
+Pins the fix for the oversized window minimum reported 2026-07-28: the window refused to go below **1649 × 767**, wider than half of a 3072 px display.
+
+**Root causes, both structural:** the keyboard legend was a `QHBoxLayout`, whose minimum is the **sum** of its items, so eight unwrappable chips demanded ~1250 px on their own; and the panel's sections were stacked unscrolled, setting a ~770 px floor on the height.
+
+**Fix:** a wrapping [FlowLayout](../demoapp/___demoapp.md), the legend moved into the panel so it never competes with the 3D view for height, and one scroll area for the whole panel. Minimum is now 560 × 420.
+
+**Verified as a real pin:** the width test fails against the pre-fix code with *"layout demands 1340 px of width"*. The stage-height test guards a second failure found while fixing the first (a wrapped legend under the stage squeezing the view to a thumbnail) and passes against the original code, which simply refused to get small at all — recorded in the test's own docstring rather than claimed as a pin for the reported bug.
+
 ## Connections
 
 ### Uses
