@@ -11,6 +11,7 @@ The 3D Preview container: owns the renderer, both cameras, orbit controls, studi
 ### Uses
 - [Parametric Primitives](primitives.md) — builds computed shapes from `show()` specs
 - [Parts](parts.md) — the part operations are thin delegations
+- [Timeline](animation.md) — the loaded animation scene; the viewer applies its samples
 - [Source (folder)](___src.md) → `views.js`, `grid.js`, `keyboard.js`
 - Three.js addons: `OrbitControls`, `GLTFLoader`, `GLTFExporter`, `RoomEnvironment`
 
@@ -43,11 +44,17 @@ The 3D Preview container: owns the renderer, both cameras, orbit controls, studi
 - `setView(name)` / `stepView(±1)`: jump to or cycle the presets
 - `setProjection(kind)`: swap projection while keeping the content the same apparent size
 - `orbitBy(azimuth°, elevation°)`: move around the content; the point looked at stays put
+- `setOrbit(azimuth°, elevation°)`: look from an **absolute** direction at the same distance — what a snap view or a timeline wants, where `orbitBy` is what a drag or an arrow key wants
 - `panBy(dx, dy)`: slide the view; steps are fractions of the visible height, so they feel identical at any zoom
 - `zoomBy(factor)`: `> 1` zooms in
 - `fitView()` / `resetView()`: frame the content (algorithm below)
 - `cameraState()`: azimuth, elevation, distance, view, projection, grid state, content version
 - `onCameraChange(callback)`: subscribe; fires immediately with the current state and returns an unsubscribe function
+
+#### Animation
+- `setAnimation(descriptor)`: load a scene — keyframes over flat parameters, see [Animation Scenes](../SCENES.md). Loaded paused at t = 0 with that instant already applied; `null` clears
+- `playAnimation()`, `pauseAnimation()`, `toggleAnimation()`, `stopAnimation()`, `seekAnimation(0…1)`, `stepFrame(±1)`, `setSpeed(x)`, `jumpToEnd()` — with no scene loaded, every one is a documented no-op
+- `animationState()` / `onAnimationChange(callback)`: playback state, and a subscription that fires immediately and returns an unsubscribe function
 
 #### Appearance & lifecycle
 `setBackground(color)` (CSS colour or `'transparent'`), `setGrid(enabled)`, `requestRender()`, `dispose()`.
@@ -90,10 +97,31 @@ Switching keeps the content the same size on screen: the visible height at the o
 
 **Orthographic is not a style choice.** It is the only projection in which a cube viewed down its body diagonal produces a geometrically exact regular hexagon; under perspective the six corner radii differ by about 25% at a 45° field of view. Measured: silhouette corner-radius spread 1.001x orthographic versus 1.269x perspective.
 
+## Playing a Scene
+
+The [Timeline](animation.md) resolves values; the viewer applies them, and that split is what lets the identical descriptor drive the LIGHT renderer too.
+
+```
+EACH FRAME (and after every transport command):
+    FOR EACH {channel, path, value} IN timeline.values():
+        camera.* → remember;  everything else → apply immediately
+    IF any camera channel appeared:
+        place the camera absolutely from azimuth / elevation / dolly
+```
+
+Two things make a scene content-independent:
+
+- **`camera.dolly` is a factor of the scene's own framing**, captured when the scene is loaded (`_reframeAnimation()` frames the content the way the presets would, then remembers the distance). One descriptor therefore plays correctly on a 1-unit cube and on a 100-unit model.
+- **Both baselines come from ONE quantity.** The orthographic frustum height is derived from the perspective framing distance rather than from its own silhouette fit — otherwise a scene that switches projection mid-flight would jump in size at the switch.
+
+A scene owns the camera outright while loaded, so a resize always re-frames and re-applies, where an un-animated viewer leaves a user-moved camera alone.
+
+**Showing new content clears the loaded scene.** A scene is written against the parts of specific content; keeping it would mean driving paths that need not exist any more, and failing from inside `show()` rather than anywhere the host could act on it. Content first, scene second.
+
 ## Design Decisions
 
-- **Render-on-demand:** `_tick()` runs every frame but renders only when `controls.update()` reports movement (orbiting / damping inertia) or `_dirty` is set. Idle preview = idle GPU.
-- **Camera notifications are rate-limited** to `stateInterval` (80 ms) while moving, with a final state when movement stops. A 60 Hz stream over the Qt bridge buys nothing a readout can show.
+- **Render-on-demand:** `_tick()` runs every frame but renders only when `controls.update()` reports movement (orbiting / damping inertia) or `_dirty` is set. Idle preview = idle GPU. A playing scene marks the frame dirty itself.
+- **Camera and playback notifications are rate-limited** to `stateInterval` (80 ms) while something is moving — a drag, damping inertia or a playing scene — with a final state the moment it stops. A 60 Hz stream over the Qt bridge buys nothing a readout can show.
 - **Runtime environment lighting:** `RoomEnvironment` through `PMREMGenerator` gives PBR materials a neutral studio look with **no HDR asset** (root Rule #19), plus one directional light for definition.
 - **Content disposal on swap:** `_clear()` walks the outgoing content and disposes geometry, materials and textures — repeated `show()` calls cannot leak GPU memory.
 - **The grid lives outside the content group**, so enabling it never changes how the content is framed.

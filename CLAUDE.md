@@ -20,9 +20,11 @@ The stack question raised by [PLAN.md](PLAN.md) — which commissioned QPainter 
 - **The WEB renderer's display logic lives in `src/`.** `preview3d/widget.py` only marshals calls (JSON specs, base64 model bytes) — never add rendering behaviour to it.
 - **The LIGHT renderer keeps its geometry Qt-free.** `vectors`, `scene`, `primitives` and `camera` import no Qt, so they can be tested without a GUI; only `renderer.py` and `view.py` touch it.
 - **Primitives are computed (root Rule #19).** New simple shapes are added as parametric builders in `src/primitives.js` — never as stored model files. `exportGLB()` exists for the rare case a real file is needed.
+- **Animation scenes are DATA, and only ever drive flat parameters.** A scene is a JSON descriptor in `shared/scenes.json` (or a consumer's own data) — keyframes over the channels in `shared/spec.json`. If a scene needs an engine change, the missing piece is a CHANNEL, added to both renderers; never hardcode choreography in either. See [SCENES.md](SCENES.md).
 - **Every builder names its children.** An unnamed node cannot be addressed by the parts API and shows up as `Mesh#3` in a host's UI — see [MODELS.md](MODELS.md).
 - **`web/preview3d.min.js` is a build artifact that IS committed** — consumers must not need Node. After ANY change in `src/`, run `npm run build` and commit the refreshed bundle together with the source change.
 - **JS API and Python API move together.** A new JS Viewer method gets its snake_case mirror in `preview3d/widget.py` AND in `preview3d/light/view.py` in the same session, and all three docs are updated.
+- **Content first, scene second.** `show_scene` / `show_axes` / `load_model` CLEAR any loaded animation in both renderers, because a scene addresses the parts of specific content. Do not "helpfully" keep the scene across a content swap — that is how a timeline ends up driving a path that no longer exists, and failing from inside `show_scene` where the host can do nothing about it.
 
 ## Commands
 
@@ -42,6 +44,7 @@ Rendering claims require screenshots or measurements (root Guideline #1):
 - **Controls:** Playwright on the demo page — read `viewer.camera.position` and `viewer.controls.target`, drag/wheel, read again. Rotation must move the camera while leaving the orbit distance unchanged; the wheel must shrink it.
 - **Model loading:** `viewer.exportGLB()` in the browser writes a real `.glb`; feed that file to `Preview3DWidget.load_model()` and screenshot — one test covers both file paths.
 - **Framing / geometry:** measure the rendered silhouette from pixels rather than trusting the look. The regular-hexagon claim is pinned that way: render a plain cube at `iso` in both projections, find the silhouette's corner radii from the centroid, and check the spread (orthographic ≈ 1.00x, perspective ≈ 1.27x at fov 45).
+- **Animation:** never claim "it plays" from a screenshot — a still frame cannot show motion. Connect `camera_changed`, sample the reported azimuth ~1 s apart while a scene runs (it must move), then press pause and sample again (it must not), and step one frame (the frame counter must go up by exactly 1). Do it in BOTH renderers. `tests/test_animation_parity.py` covers the evaluated instants; this covers the clock actually running.
 
 JS console output is forwarded to Python `logging` by the widget, so JS errors surface in the host app's log (Rule #1).
 

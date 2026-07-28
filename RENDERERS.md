@@ -43,8 +43,9 @@ Both, identically:
 - Silhouette framing, so content fills its container
 - Per-part show / hide / dim / solo / remove, by path
 - Parametric primitives from JSON specs, nested into assemblies
+- **Animation playback** from the same scene descriptors — play, pause, single-frame stepping, scrub, speed, instant mode ([Animation Scenes](SCENES.md))
 - The optional ground grid with a rounded cell size
-- The live camera readout (azimuth, elevation, distance)
+- The live camera and playback readouts
 - Transparent-background mode
 
 Only the **web** renderer:
@@ -73,13 +74,14 @@ Anything a host can observe is the same on both sides.
 |-----------|------|
 | Show a scene | `show_scene(spec)`, `show_axes(...)` |
 | Parts | `list_parts(...)`, `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` |
-| Camera | `set_view`, `step_view`, `set_projection`, `orbit_by`, `pan_by`, `zoom_by`, `reset_view` |
+| Camera | `set_view`, `step_view`, `set_projection`, `orbit_by`, `set_orbit`, `pan_by`, `zoom_by`, `reset_view` |
+| Animation | `set_animation`, `play_animation`, `pause_animation`, `toggle_animation`, `stop_animation`, `seek_animation`, `step_frame`, `set_speed`, `jump_to_end`, `animation_state` |
 | Appearance | `set_background`, `set_grid` |
-| State | `camera_changed(dict)` — azimuth, elevation, distance, view, projection, grid, gridStep, background, contentVersion |
+| State | `camera_changed(dict)` — azimuth, elevation, distance, view, projection, grid, gridStep, background, contentVersion<br>`animation_changed(dict)` — scene, label, playing, time, duration, progress, speed, frame, frames, loop |
 
-One difference, and it is unavoidable: **`list_parts` is asynchronous on the web renderer** (the answer has to cross into the page and back), so it takes a callback. The LIGHT one accepts the same callback *and* returns the list directly, so code written either way works with either renderer.
+One difference, and it is unavoidable: **`list_parts` and `animation_state` are asynchronous on the web renderer** (the answer has to cross into the page and back), so they take a callback. The LIGHT ones accept the same callback *and* return the value directly, so code written either way works with either renderer.
 
-Scene specs and part paths are documented once, in [MODELS.md](MODELS.md), and apply to both.
+Scene specs and part paths are documented once, in [MODELS.md](MODELS.md); animation descriptors in [SCENES.md](SCENES.md). Both apply to both renderers.
 
 ---
 
@@ -101,10 +103,13 @@ Hidden-surface handling also differs in kind. The web core uses a depth buffer, 
 
 Two implementations of one component invite drift (root Rule #5). Two mechanisms hold them together:
 
-1. **`shared/spec.json`** — the pole palette, neutral colours, face order, view presets and camera defaults live in ONE file. The JS core imports it at build time; the Python renderer reads it at run time. A colour changed there changes in both, and a test asserts neither source restates a pole colour.
+1. **`shared/spec.json`** — the pole palette, neutral colours, face order, view presets, camera defaults and the animation channel table live in ONE file, and **`shared/scenes.json`** holds the shipped scenes. The JS core imports both at build time; the Python renderer reads them at run time. A colour changed there changes in both, and a test asserts neither source restates a pole colour or its own copy of the frame rate.
 2. **`tests/test_renderer_parity.py`** — the same specs go into both widgets and the observable results are compared: part paths, initial visibility, `show_only`, opacity isolation, framing and camera state.
+3. **`tests/test_animation_parity.py`** — every shipped scene is driven to t = 0, ½ and 1 in both and compared: camera angles, projection, per-part visibility and opacity, the frame counter. The easing curves are sampled through both implementations and compared numerically, since the timeline is the one part of the component that genuinely exists twice.
 
 Whenever a capability is added to one renderer, it either lands in both or is recorded in the "only" lists above. An undocumented difference is a bug.
+
+That is not theoretical: the animation pins found, on their first run, that the cube's wireframe was 0.35 opaque in the web core and 1.0 in the LIGHT one — the same part reporting two different values. It is now `neutral.edgeOpacity` in the shared spec.
 
 ---
 
@@ -115,10 +120,16 @@ Whenever a capability is added to one renderer, it either lands in both or is re
 ```python
 from preview3d import Preview3DWidget, Preview3DLightWidget
 
+from preview3d import load_shared_scenes
+
 viewer = Preview3DLightWidget()      # or Preview3DWidget()
 viewer.show_scene({"type": "cube", "colors": "poles"})
 viewer.set_projection("orthographic")
 viewer.set_part_opacity("cube/face:+z", 0.2)
+
+scene = next(s for s in load_shared_scenes() if s["name"] == "turntable")
+viewer.set_animation(scene)          # content first, scene second
+viewer.play_animation()
 ```
 
-The demo app (`python main.py`) has a **RENDERER** switch at the top of its panel that swaps them live on the same scene — the fastest way to see the difference on your own content.
+The demo app (`python main.py`) has a **RENDERER** switch at the top of its panel that swaps them live on the same scene — including mid-animation, so a flight can be watched in both back to back. The fastest way to see the difference on your own content.

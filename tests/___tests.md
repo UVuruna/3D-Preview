@@ -33,6 +33,13 @@ Not a bug pin but a **drift guard**: two rendering implementations of one compon
 
 It deliberately does **not** compare pixels. The renderers are meant to look different (real materials versus flat shading), and pinning appearance would forbid either from improving. See [The Two Renderers](../RENDERERS.md).
 
+### `test_animation_parity.py` — A Scene Must Play the Same in Both
+The timeline is the one piece of the component that genuinely exists **twice, in two languages** — `src/animation.js` and `preview3d/light/animation.py`. Everything else either reads `shared/spec.json` or is renderer-specific by design, so this is where drift would actually happen: an easing curve rounded differently, a key boundary resolved on the other side, a bool interpolating in one language and stepping in the other.
+
+These are PLAN.md's golden tests made concrete. Every shipped scene is driven to **t = 0, ½ and 1** in both renderers and the observable result compared: camera angles, projection, framing, per-part visibility and opacity, the frame counter. Plus: the easing curves are sampled through both implementations and compared numerically; both must read the frame rate, speeds and channel table from `shared/spec.json`; instant mode must equal seeking to the end; and the transport must be inert rather than raise when no scene is loaded.
+
+**It found a real one on its first run:** the cube's wireframe was drawn at 0.35 opacity by the web core (hardcoded in the line material) and at 1.0 by the LIGHT one, which then applied a separate ×0.45 at paint time — two renderers reporting different opacity for the same part. The value now lives in `shared/spec.json` as `neutral.edgeOpacity` and both read it.
+
 ## Connections
 
 ### Uses

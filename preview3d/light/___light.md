@@ -2,7 +2,7 @@
 
 The LIGHT renderer: 3D drawn with QPainter — no browser engine, no GPU, no model files. One of the project's two interchangeable back ends; see [The Two Renderers](../../RENDERERS.md) for how to choose.
 
-Only `renderer.py` and `view.py` touch Qt. `vectors`, `scene`, `primitives` and `camera` are pure Python, so the geometry can be exercised without a GUI.
+Only `renderer.py` and `view.py` touch Qt. `vectors`, `scene`, `primitives`, `camera` and `animation` are pure Python, so the geometry and the timeline can be exercised without a GUI.
 
 ## Files
 
@@ -17,6 +17,9 @@ Builds the same specs the web core builds, into the same named part tree. See [L
 
 ### `camera.py` — Orbit Camera and Projection
 Target, distance, azimuth, elevation, both projections, and the silhouette fit. See [Light Camera](camera.md).
+
+### `animation.py` — Timeline
+Keyframe evaluation and the playback clock, mirroring the web core's timeline. See [Light Timeline](animation.md).
 
 ### `renderer.py` — Project, Sort, Paint
 The Qt painting layer. See [Light Renderer](renderer.md).

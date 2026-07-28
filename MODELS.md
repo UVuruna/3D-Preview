@@ -107,6 +107,8 @@ widget.show_only("axes/arm:+x/labels", "label:1")
 
 **Author all alternatives in the same place, at the same size.** They are alternates, not a layout — the viewer swaps visibility and nothing else.
 
+The same selection can be driven by an animation instead of by hand: the `group.show` channel steps a group through its children over time. See [Animation Scenes](SCENES.md), where the shipped "Legend cycle" scene does exactly this for all six arms.
+
 ---
 
 <a id="materials"></a>

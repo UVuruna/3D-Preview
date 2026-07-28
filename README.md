@@ -1,6 +1,6 @@
 # 3D Preview
 
-Embeddable 3D previewer with two interchangeable renderers — a Three.js core for websites and rich models, and a QPainter one for Qt apps that cannot carry a browser engine. Both give free orbit, view presets and a perspective/orthographic switch, and let every scene element be shown, hidden or dimmed by name.
+Embeddable 3D previewer with two interchangeable renderers — a Three.js core for websites and rich models, and a QPainter one for Qt apps that cannot carry a browser engine. Both give free orbit, view presets, per-element visibility and opacity, and self-playing animation scenes with play, pause, single-frame stepping and scrubbing.
 
 ## Table of Contents
 
@@ -22,7 +22,9 @@ pip install PySide6
 python main.py
 ```
 
-A window with the viewer and a control panel: the built-in demo scenes, loading a `.glb`/`.gltf` file from disk, the seven view presets, perspective ↔ orthographic, the reference grid, background modes (dark / light / transparent), a live camera readout, and a parts list where every element can be hidden, dimmed or soloed.
+A window with the viewer and a control panel: a **RENDERER** switch between the two back ends, the built-in demo scenes, loading a `.glb`/`.gltf` file from disk, **animation playback** (five scenes, with restart / single-frame stepping / play-pause / jump-to-end, a scrub slider and 0.5×–2× speed), the seven view presets, perspective ↔ orthographic, the reference grid, background modes (dark / light / transparent), a live camera readout, and a parts list where every element can be hidden, dimmed or soloed.
+
+The renderer switch carries the animation across mid-flight, which is the quickest way to see how the two compare on the same moving scene.
 
 The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
@@ -54,14 +56,16 @@ Two implementations of one component invite drift (root Rule #5), so the mitigat
   📝 CLAUDE.md          ← AI guidance for this project
   📝 RENDERERS.md       ← The two renderers: which to use and why
   📝 MODELS.md          ← How to author models whose parts can be controlled
+  📝 SCENES.md          ← How to write animation scenes (keyframes as data)
   📝 PLAN.md            ← Commissioning spec (DOMY Watch's brief for this gadget)
   🐍 main.py            ← Demo application (run this)
   ⚙️ package.json       ← JS build config (esbuild)
   ⚙️ pyproject.toml     ← Python package config (hatchling)
-  📁 shared/            ← Values BOTH renderers read
-    ⚙️ spec.json        palette, face order, view presets, camera defaults
+  📁 shared/            ← Data BOTH renderers read
+    ⚙️ spec.json        palette, face order, view presets, camera and animation defaults
+    ⚙️ scenes.json      the shipped animation scenes
   📁 src/               ← WEB renderer sources (JS)
-    🔧 index.js  viewer.js  primitives.js  parts.js
+    🔧 index.js  viewer.js  primitives.js  parts.js  animation.js
     🔧 views.js  grid.js  keyboard.js  labels.js
   📁 web/               ← Shipped artifact: host page + built bundle
     📄 index.html  preview3d.min.js
@@ -70,7 +74,7 @@ Two implementations of one component invite drift (root Rule #5), so the mitigat
   📁 preview3d/         ← Python package — both widgets
     🐍 __init__.py  widget.py  resources.py
     📁 light/           ← LIGHT renderer (QPainter software 3D)
-      🐍 view.py  renderer.py  camera.py  scene.py  primitives.py  vectors.py
+      🐍 view.py  renderer.py  camera.py  scene.py  primitives.py  vectors.py  animation.py
   📁 demoapp/           ← Demo application window
     🐍 window.py  parts_panel.py  theme.py  flow_layout.py
   📁 tests/             ← Regression pins (pytest)
@@ -97,6 +101,9 @@ Copy `web/preview3d.min.js` next to your page:
     viewer.show({ type: 'axes' });           // or {type: 'cube', colors: 'poles'}
     viewer.setProjection('orthographic');    // exact isometric
     viewer.setPartOpacity('cube/face:+z', 0.2);
+
+    viewer.setAnimation(Preview3D.SCENES[0]);   // a shipped scene, or your own descriptor
+    viewer.playAnimation();
 </script>
 ```
 
@@ -114,6 +121,10 @@ widget.show_axes(arms=[
     {"axis": "+z", "label": "North"},
 ])
 widget.show_only("axes/arm:+x/labels", "label:1")   # now the arm reads "Istok"
+
+from preview3d import load_shared_scenes                    # scenes are DATA — SCENES.md
+widget.set_animation(load_shared_scenes()[0])               # content first, scene second
+widget.play_animation()                                     # play / pause / step / scrub / instant
 ```
 
 From a repo checkout the package resolves the web bundle automatically; as a dependency install it with `pip install git+<repo-url>` (the bundle ships inside the wheel).
@@ -155,6 +166,7 @@ Keys act on the viewer once it has focus (click it, or call `focus()` on its con
 
 - [The Two Renderers](RENDERERS.md) — which renderer to use, what each can do, how drift is prevented
 - [Making Models for 3D Preview](MODELS.md) — how to author or repair a model so its parts can be controlled
+- [Animation Scenes](SCENES.md) — the scene descriptor format, the channels, and the playback API
 - [Demo Application](main.md) — the runnable showcase and integration example
 - [Source (folder)](src/___src.md) — viewer core, primitives, parts, views, grid, keyboard, labels
 - [Web (folder)](web/___web.md) — host page and the built bundle

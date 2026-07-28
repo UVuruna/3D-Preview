@@ -28,6 +28,7 @@ Stored as **orbit parameters, not as a position and a matrix**: azimuth and elev
 - `position` / `basis()`: the eye, and the orthonormal (forward, right, up); forward points from the target toward the eye
 - `look_along(direction)`: aim down a direction without changing distance
 - `orbit_by`, `pan_by`, `zoom_by`: movement; pan steps are fractions of the visible height so they feel the same at any zoom
+- `set_orbit(azimuth, elevation)`: look from an **absolute** direction at the same distance — what a snap view or a timeline needs, where `orbit_by` is what a drag or an arrow key needs. Elevation is clamped short of the poles
 - `set_projection(kind)`: swaps while keeping the content the same size on screen
 - `visible_height()` / `visible_height_at(depth)`: world height the viewport spans
 - `fit(points, direction, margin)`: framing (below)

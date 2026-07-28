@@ -5,10 +5,13 @@ JavaScript source of the 3D Preview core. Bundled by esbuild (`npm run build`) i
 ## Files
 
 ### `index.js` — Public API
-Entry point (~20 lines, documented here). Re-exports `Viewer`, `buildPrimitive`, `makeLabelSprite`, the pole colour table, the view presets and the tunable defaults of every module, and defines `mount(container, options)` — the one call every consumer starts with.
+Entry point (~25 lines, documented here). Re-exports `Viewer`, `buildPrimitive`, `makeLabelSprite`, `Timeline`, the pole colour table, the view presets, the shipped animation scenes as `SCENES`, and the tunable defaults of every module — and defines `mount(container, options)`, the one call every consumer starts with.
 
 ### `viewer.js` — Viewer Container
-The container itself: renderer, the two cameras, orbit controls, lighting, content lifecycle, framing, grid, camera-state events, and the part operations a host calls. See [Viewer](viewer.md).
+The container itself: renderer, the two cameras, orbit controls, lighting, content lifecycle, framing, grid, animation playback, camera- and playback-state events, and the part operations a host calls. See [Viewer](viewer.md).
+
+### `animation.js` — Timeline
+Scenes as data: keyframes and easing over flat parameters, plus the playback clock. See [Timeline](animation.md).
 
 ### `primitives.js` — Parametric Primitives
 Simple shapes computed from JSON specs (root Rule #19), with named parts. See [Parametric Primitives](primitives.md).

@@ -24,7 +24,7 @@ FOR EACH item:
 `flow_size_policy()` returns the size policy a hosting widget needs for the layout's height-for-width to be honoured — without it Qt asks for the height once, at the wrong width.
 
 ### `window.py` — Demo Window
-The window: viewer stage, control panel, camera readout. See [Demo Window](window.md).
+The window: viewer stage, control panel, animation transport, camera readout. See [Demo Window](window.md).
 
 ### `parts_panel.py` — Parts Panel
 The scrollable per-element control list. See [Parts Panel](parts_panel.md).

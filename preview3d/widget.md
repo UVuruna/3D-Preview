@@ -19,7 +19,7 @@
 ## Classes
 
 ### _Bridge
-The `QObject` JS calls into, one slot per message the page can send. `reportCamera` re-emits as the widget's `camera_changed` signal.
+The `QObject` JS calls into, one slot per message the page can send. `reportCamera` re-emits as the widget's `camera_changed` signal, `reportAnimation` as `animation_changed`.
 
 ### _ConsolePage
 `QWebEnginePage` subclass forwarding the JS console into Python `logging` (`preview3d.widget` logger) — a JS error inside the viewer lands in the host app's log (root Rule #1).
@@ -28,6 +28,7 @@ The `QObject` JS calls into, one slot per message the page can send. `reportCame
 
 #### Signals
 - `camera_changed(dict)`: `{azimuth, elevation, distance, view, projection, grid, gridStep, contentVersion}` — degrees; emitted while the camera moves, rate-limited by the viewer. Watch `contentVersion` to know when newly loaded content is actually in place.
+- `animation_changed(dict)`: `{scene, label, playing, time, duration, progress, speed, frame, frames, loop}` — likewise rate-limited. A non-looping scene reaching its end reports `playing: False` at `progress: 1`; that report **is** the end-of-scene signal.
 
 #### Content
 - `show_scene(spec)`: any parametric spec, passed through as JSON — see [Parametric Primitives](../src/primitives.md)
@@ -38,7 +39,12 @@ The `QObject` JS calls into, one slot per message the page can send. `reportCame
 `list_parts(callback)` (asynchronous), `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` — see [Making Models](../MODELS.md).
 
 #### Camera
-`set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)`, `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`.
+`set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)` (relative), `set_orbit(az, el)` (absolute), `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`.
+
+#### Animation
+`set_animation(descriptor)`, `play_animation()`, `pause_animation()`, `toggle_animation()`, `stop_animation()`, `seek_animation(0…1)`, `step_frame(±1)`, `set_speed(x)`, `jump_to_end()`, `animation_state(callback)` — see [Animation Scenes](../SCENES.md).
+
+Playback runs **inside the page**, on its own animation frames; these calls only start and steer it, and the state comes back over the web channel. `show_scene` / `load_model` clear any loaded scene, so content is loaded first and the scene second.
 
 #### Appearance
 `set_background(color)` (CSS hex or `"transparent"`), `set_grid(enabled)`. The Qt page surface follows automatically — the viewer reports the colour it clears to and `_sync_background` applies it, so the colour is never restated on the Python side.

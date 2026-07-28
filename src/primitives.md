@@ -85,7 +85,7 @@ Defaults in `CUBE_DEFAULTS`:
 | `size` | `1` | edge length |
 | `color` | `#818CF8` | single colour → one `body` mesh |
 | `colors` | `null` | six colours in order `+x −x +y −y +z −z`, or the string `'poles'` → six named `face:*` meshes |
-| `edges` | `true` | soft translucent edge lines, named `edges` |
+| `edges` | `true` | soft translucent edge lines, named `edges`; how faint is `neutral.edgeOpacity` in `shared/spec.json`, so both renderers report and draw the same value |
 
 **Per-face colours build six separate face meshes, not one mesh with six material slots.** A material slot cannot be hidden or dimmed on its own — and a face nobody can address is a face nobody can look through. Faces are double-sided, so once the near face is dimmed the far ones still read as solid.
 

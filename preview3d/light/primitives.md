@@ -29,7 +29,7 @@ The web core hands geometry to a GPU; here every curved surface becomes explicit
 | Arm tip | cone, `TIP_SEGMENTS` triangles plus a base fan |
 | Joint | UV sphere, `SPHERE_SEGMENTS` × `SPHERE_RINGS` |
 | Cube face | one quad, wound so its normal points outward |
-| Cube edges | 12 segments — corner pairs differing along exactly one axis |
+| Cube edges | 12 segments — corner pairs differing along exactly one axis; the node carries `neutral.edgeOpacity` from `shared/spec.json`, matching the web core's line material |
 
 The segment counts are the point where a shaft stops reading as faceted at normal preview sizes; raising them costs polygons for no visible gain.
 
