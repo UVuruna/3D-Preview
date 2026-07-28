@@ -42,6 +42,11 @@ class PartsPanel(QWidget):
         self._rows.setSpacing(2)
         self._rows.addStretch()
 
+    def set_viewer(self, viewer) -> None:
+        """Point at another renderer's widget — both expose the same methods."""
+        self._viewer = viewer
+        self.reload()
+
     def reload(self) -> None:
         """Rebuild for NEW content — solo state belongs to the old scene."""
         self._solo.clear()

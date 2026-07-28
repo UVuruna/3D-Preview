@@ -28,6 +28,11 @@ Pins the fix for the oversized window minimum reported 2026-07-28: the window re
 
 **Verified as a real pin:** the width test fails against the pre-fix code with *"layout demands 1340 px of width"*. The stage-height test guards a second failure found while fixing the first (a wrapped legend under the stage squeezing the view to a thumbnail) and passes against the original code, which simply refused to get small at all — recorded in the test's own docstring rather than claimed as a pin for the reported bug.
 
+### `test_renderer_parity.py` — The Two Renderers Must Agree
+Not a bug pin but a **drift guard**: two rendering implementations of one component is a standing invitation to diverge (root Rule #5). The same scene specs go into both widgets and everything a host can observe is compared — part paths, initial visibility, `show_only`, opacity isolation, framing and camera state — plus an assertion that neither source restates a pole colour instead of reading `shared/spec.json`.
+
+It deliberately does **not** compare pixels. The renderers are meant to look different (real materials versus flat shading), and pinning appearance would forbid either from improving. See [The Two Renderers](../RENDERERS.md).
+
 ## Connections
 
 ### Uses

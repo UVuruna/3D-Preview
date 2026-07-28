@@ -1,0 +1,41 @@
+{
+  "_comment": "Shared by BOTH renderers — the JS core imports this file at build time and the Python LIGHT renderer reads it at run time, so these values are stated once and cannot drift between the two. Colours: owner decree 2026-07-28.",
+
+  "faceOrder": ["+x", "-x", "+y", "-y", "+z", "-z"],
+
+  "poles": {
+    "+x": "#F97316",
+    "-x": "#3B82F6",
+    "+y": "#EAB308",
+    "-y": "#A855F7",
+    "+z": "#22C55E",
+    "-z": "#EF4444"
+  },
+
+  "neutral": {
+    "joint": "#B3B3B3",
+    "edges": "#F5F5F5",
+    "body": "#818CF8"
+  },
+
+  "views": {
+    "iso":    { "label": "Isometric", "direction": [1, 1, 1] },
+    "front":  { "label": "Front",     "direction": [0, 0, 1] },
+    "right":  { "label": "Right",     "direction": [1, 0, 0] },
+    "back":   { "label": "Back",      "direction": [0, 0, -1] },
+    "left":   { "label": "Left",      "direction": [-1, 0, 0] },
+    "top":    { "label": "Top",       "direction": [0, 1, 0] },
+    "bottom": { "label": "Bottom",    "direction": [0, -1, 0] }
+  },
+
+  "viewOrder": ["iso", "front", "right", "back", "left", "top", "bottom"],
+
+  "camera": {
+    "fov": 45,
+    "fitMargin": 1.1,
+    "defaultView": "iso",
+    "orbitStep": 15,
+    "panStep": 0.06,
+    "zoomStep": 1.15
+  }
+}

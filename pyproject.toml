@@ -13,6 +13,8 @@ dependencies = ["PySide6>=6.5"]
 packages = ["preview3d"]
 
 # Ship the built web bundle inside the package so `pip install git+...` works
-# without Node on the consumer's machine.
+# without Node on the consumer's machine, and the shared spec both renderers
+# read so a colour or a view preset cannot drift between them.
 [tool.hatch.build.targets.wheel.force-include]
 "web" = "preview3d/web"
+"shared" = "preview3d/shared"

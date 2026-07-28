@@ -1,6 +1,6 @@
 # 3D Preview
 
-Embeddable 3D previewer — one Three.js core with orbit controls, view presets and a perspective/orthographic switch, used by Python GUIs as a PySide6 widget or by websites with one script tag. Scene elements are shown, hidden or dimmed by name; simple shapes are computed from JSON specs, and glTF/GLB models load and export.
+Embeddable 3D previewer with two interchangeable renderers — a Three.js core for websites and rich models, and a QPainter one for Qt apps that cannot carry a browser engine. Both give free orbit, view presets and a perspective/orthographic switch, and let every scene element be shown, hidden or dimmed by name.
 
 ## Table of Contents
 
@@ -34,9 +34,13 @@ The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
 *Answer required by root Rule #21 — which language/stack fits this task best, and why?*
 
-The viewer must render **identically** inside Python desktop apps and websites. A browser WebGL core (**Three.js**, bundled by esbuild) is the only stack both targets share natively — websites load the bundle directly, and PySide6 embeds the same bundle through `QWebEngineView` (Chromium). One rendering implementation serves every consumer (root Rule #5).
+**Both, deliberately** — because the consumers genuinely differ and neither stack covers all of them.
 
-**Alternative considered:** a native Python viewer (software projection with QPainter, or pyqtgraph/VTK) plus a separate web viewer — rejected because it means two implementations of identical behaviour, double maintenance and guaranteed feature drift, and because it cannot serve the website consumers at all. The cost of the chosen stack is the Qt WebEngine dependency on the Python side, which PySide6 already ships but which adds weight to a consumer's installer.
+A browser WebGL core (**Three.js**, bundled by esbuild) is the only stack that serves websites and Qt apps from one implementation: a page loads the bundle directly, and PySide6 embeds the same bundle through `QWebEngineView`. It also brings glTF/GLB loading and real materials for free. Its cost is Qt WebEngine — **343 MB on disk** in a PySide6 install, and the largest single thing in an otherwise lean desktop app.
+
+So there is a second renderer: **software 3D drawn with QPainter**, pure Python, no browser engine and no GPU. For parametric labelled scenes — the kind the first consumer needs — it gives the same free orbit, the same views and projections, and crisper text; what it gives up is file loading, real materials, large meshes and browsers.
+
+Two implementations of one component invite drift (root Rule #5), so the mitigation is built in rather than promised: everything both must agree on lives in `shared/spec.json`, and `tests/test_renderer_parity.py` drives both from the same specs and compares what a host can observe. See [The Two Renderers](RENDERERS.md).
 
 ---
 
@@ -48,22 +52,27 @@ The viewer must render **identically** inside Python desktop apps and websites. 
 📁 3D Preview/
   📝 README.md          ← You are here
   📝 CLAUDE.md          ← AI guidance for this project
+  📝 RENDERERS.md       ← The two renderers: which to use and why
   📝 MODELS.md          ← How to author models whose parts can be controlled
   📝 PLAN.md            ← Commissioning spec (DOMY Watch's brief for this gadget)
   🐍 main.py            ← Demo application (run this)
   ⚙️ package.json       ← JS build config (esbuild)
   ⚙️ pyproject.toml     ← Python package config (hatchling)
-  📁 src/               ← JS core sources
+  📁 shared/            ← Values BOTH renderers read
+    ⚙️ spec.json        palette, face order, view presets, camera defaults
+  📁 src/               ← WEB renderer sources (JS)
     🔧 index.js  viewer.js  primitives.js  parts.js
     🔧 views.js  grid.js  keyboard.js  labels.js
   📁 web/               ← Shipped artifact: host page + built bundle
     📄 index.html  preview3d.min.js
   📁 demo/              ← Standalone browser demo
     📄 index.html
-  📁 preview3d/         ← Python package (PySide6 widget)
-    🐍 __init__.py  widget.py
+  📁 preview3d/         ← Python package — both widgets
+    🐍 __init__.py  widget.py  resources.py
+    📁 light/           ← LIGHT renderer (QPainter software 3D)
+      🐍 view.py  renderer.py  camera.py  scene.py  primitives.py  vectors.py
   📁 demoapp/           ← Demo application window
-    🐍 window.py  parts_panel.py  theme.py
+    🐍 window.py  parts_panel.py  theme.py  flow_layout.py
   📁 tests/             ← Regression pins (pytest)
   📁 assets/
     🖼️ logo.svg
@@ -94,9 +103,10 @@ Copy `web/preview3d.min.js` next to your page:
 ### Python (PySide6)
 
 ```python
-from preview3d import Preview3DWidget
+from preview3d import Preview3DWidget        # web core: files, materials, browsers
+from preview3d import Preview3DLightWidget   # QPainter: no browser engine at all
 
-widget = Preview3DWidget(parent)
+widget = Preview3DWidget(parent)              # ← swap the class, nothing else changes
 widget.camera_changed.connect(lambda s: print(s["azimuth"], s["elevation"]))
 widget.show_axes(arms=[
     {"axis": "+x", "label": ["East", "Istok", "E"]},
@@ -143,6 +153,7 @@ Keys act on the viewer once it has focus (click it, or call `focus()` on its con
 
 ## Documentation
 
+- [The Two Renderers](RENDERERS.md) — which renderer to use, what each can do, how drift is prevented
 - [Making Models for 3D Preview](MODELS.md) — how to author or repair a model so its parts can be controlled
 - [Demo Application](main.md) — the runnable showcase and integration example
 - [Source (folder)](src/___src.md) — viewer core, primitives, parts, views, grid, keyboard, labels

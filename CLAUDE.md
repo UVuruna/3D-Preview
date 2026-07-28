@@ -4,26 +4,25 @@ Inherits all rules from the root [CLAUDE.md](../../CLAUDE.md). Project-specific 
 
 ## What This Is
 
-An embeddable 3D viewer **component** (library, not an installable app): a Three.js core bundled by esbuild, consumed by websites (script tag) and by Python GUIs (PySide6 `Preview3DWidget` over `QWebEngineView`). See [README](README.md) for the stack rationale (Rule #21).
+An embeddable 3D viewer **component** (library, not an installable app) with **two interchangeable renderers** — see [RENDERERS.md](RENDERERS.md):
+
+- **WEB** — a Three.js core bundled by esbuild, used by websites via a script tag and by Qt apps through `Preview3DWidget` (QWebEngineView).
+- **LIGHT** — `Preview3DLightWidget`, software 3D drawn with QPainter: no browser engine, no GPU, no file loading.
 
 **Because it is a library, the installable-app pipeline does not apply:** no `setup/` folder, no NSIS build, no Rule #23 self-update, no Rule #24 auto-release of installers. Consumers take the committed `web/preview3d.min.js` or `pip install git+` the repo.
 
-## Open Decision — Stack Divergence from PLAN.md
-
-[PLAN.md](PLAN.md) is DOMY Watch's commissioning spec, written before this project existed. It specifies a **different stack**: software 3D drawn with QPainter, explicitly rejecting Three.js + QWebEngineView over QtWebEngine's installer weight for DOMY's build.
-
-What actually got built is the web core, chosen by the owner in the founding session because the named consumers include a **website** (Vaske Komarnici) alongside DOMY. PLAN.md's own text sets that as the condition to revisit its decision: *"Revisit only if a future consumer is a WEBSITE."*
-
-The installer-weight concern is real and unresolved. **Do not silently rewrite the stack in either direction** — it is the owner's call, and it is recorded here so no session has to rediscover the conflict. Everything else in PLAN.md (the data model, the four owner models, the switcher, the cinematic scenes, the milestones) is renderer-neutral by its own design and stands.
+The stack question raised by [PLAN.md](PLAN.md) — which commissioned QPainter software 3D and rejected QWebEngine on installer weight — was **settled by the owner on 2026-07-28: build both.** Neither renderer supersedes the other; a consumer picks by what it needs.
 
 ## Ground Rules
 
-- **One rendering implementation.** All display logic lives in `src/`. The Python wrapper only marshals calls (JSON specs, base64 model bytes) — never add rendering behaviour on the Python side.
+- **A capability lands in BOTH renderers, or its absence is documented.** Two implementations of one component is a standing drift risk (Rule #5). When you add something to one, either add it to the other or record it in RENDERERS.md's "only" lists — an undocumented difference is a bug.
+- **Values both renderers must agree on live in `shared/spec.json`** — palette, face order, view presets, camera defaults. The JS core imports it at build time, Python reads it at run time. Never restate one of those values in either source; a parity test fails if you do.
+- **The WEB renderer's display logic lives in `src/`.** `preview3d/widget.py` only marshals calls (JSON specs, base64 model bytes) — never add rendering behaviour to it.
+- **The LIGHT renderer keeps its geometry Qt-free.** `vectors`, `scene`, `primitives` and `camera` import no Qt, so they can be tested without a GUI; only `renderer.py` and `view.py` touch it.
 - **Primitives are computed (root Rule #19).** New simple shapes are added as parametric builders in `src/primitives.js` — never as stored model files. `exportGLB()` exists for the rare case a real file is needed.
 - **Every builder names its children.** An unnamed node cannot be addressed by the parts API and shows up as `Mesh#3` in a host's UI — see [MODELS.md](MODELS.md).
 - **`web/preview3d.min.js` is a build artifact that IS committed** — consumers must not need Node. After ANY change in `src/`, run `npm run build` and commit the refreshed bundle together with the source change.
-- **JS API and Python API move together.** A new JS Viewer method gets its snake_case mirror in `preview3d/widget.py` in the same session, and both docs are updated.
-- **The pole palette lives once**, in `src/primitives.js`. A host asks for `colors: 'poles'` or omits an arm's colour; it never restates the six hex values.
+- **JS API and Python API move together.** A new JS Viewer method gets its snake_case mirror in `preview3d/widget.py` AND in `preview3d/light/view.py` in the same session, and all three docs are updated.
 
 ## Commands
 

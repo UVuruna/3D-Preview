@@ -1,18 +1,14 @@
 // View presets — the standard directions a technical previewer offers, plus
 // the ordering used when cycling through them with a key or a button.
+//
+// Read from shared/spec.json so the LIGHT renderer offers exactly the same
+// presets in the same order (root Rules 5 and 19).
+
+import SHARED from '../shared/spec.json';
 
 // `direction` points FROM the content TOWARD the camera.
-export const VIEW_PRESETS = {
-    iso: { label: 'Isometric', direction: [1, 1, 1] },
-    front: { label: 'Front', direction: [0, 0, 1] },
-    right: { label: 'Right', direction: [1, 0, 0] },
-    back: { label: 'Back', direction: [0, 0, -1] },
-    left: { label: 'Left', direction: [-1, 0, 0] },
-    top: { label: 'Top', direction: [0, 1, 0] },
-    bottom: { label: 'Bottom', direction: [0, -1, 0] },
-};
-
-export const VIEW_ORDER = Object.keys(VIEW_PRESETS);
+export const VIEW_PRESETS = SHARED.views;
+export const VIEW_ORDER = SHARED.viewOrder;
 
 // The name reported once the user has orbited away from any preset.
 export const FREE_VIEW = 'free';

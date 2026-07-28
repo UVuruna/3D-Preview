@@ -18,11 +18,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from preview3d import Preview3DWidget
+from preview3d import Preview3DLightWidget, Preview3DWidget
 
 from .flow_layout import FlowLayout, flow_size_policy
 from .parts_panel import PartsPanel
 from .theme import THEME
+
+# The two interchangeable renderers — see RENDERERS.md.
+RENDERERS = [
+    ("web", "Web", Preview3DWidget, True),
+    ("light", "Light", Preview3DLightWidget, False),
+]
 
 WINDOW = {
     "title": "3D Preview — Demo",
@@ -107,8 +113,10 @@ class DemoWindow(QWidget):
 
         self.viewer = Preview3DWidget()
         self.parts = PartsPanel(self.viewer, THEME["space_s"])
+        self._renderer = RENDERERS[0][0]
         self._background_index = 0
         self._content_version = None
+        self._spec = None            # replayed when the renderer is swapped
 
         self.viewer.camera_changed.connect(self._on_camera_changed)
 
@@ -144,9 +152,9 @@ class DemoWindow(QWidget):
         stage = QFrame()
         stage.setObjectName("Card")
         stage.setMinimumSize(*STAGE_MINIMUM)
-        layout = QVBoxLayout(stage)
-        layout.setContentsMargins(*[THEME["space_s"]] * 4)
-        layout.addWidget(self.viewer)
+        self._stage_layout = QVBoxLayout(stage)
+        self._stage_layout.setContentsMargins(*[THEME["space_s"]] * 4)
+        self._stage_layout.addWidget(self.viewer)
         return stage
 
     # The legend lives in the scrolling panel, not under the stage: wrapped onto
@@ -185,6 +193,13 @@ class DemoWindow(QWidget):
         layout.setContentsMargins(*[THEME["space_s"]] * 4)
         layout.setSpacing(THEME["space_s"])
 
+        layout.addWidget(self._section("RENDERER"))
+        self._renderer_buttons = self._toggle_row(
+            layout, [(key, label) for key, label, _, _ in RENDERERS],
+            columns=2, on_click=self.set_renderer,
+        )
+        self._sync_toggle(self._renderer_buttons, self._renderer)
+
         layout.addWidget(self._section("SCENE"))
         self._scene_buttons = QButtonGroup(self)
         scenes = QGridLayout()
@@ -198,9 +213,9 @@ class DemoWindow(QWidget):
             scenes.addWidget(button, index // 2, index % 2)
         layout.addLayout(scenes)
 
-        load = QPushButton("Load GLB file…")
-        load.clicked.connect(self._load_model)
-        layout.addWidget(load)
+        self._load_button = QPushButton("Load GLB file…")
+        self._load_button.clicked.connect(self._load_model)
+        layout.addWidget(self._load_button)
 
         layout.addWidget(self._section("VIEW"))
         self._view_buttons = self._toggle_row(
@@ -284,7 +299,39 @@ class DemoWindow(QWidget):
         action(*args)
         self.viewer.setFocus()
 
+    # Swaps the widget in the stage and replays the current state onto it, so
+    # the two renderers can be compared on the very same scene.
+    def set_renderer(self, key: str) -> None:
+        if key == self._renderer:
+            return
+        factory = next(f for k, _, f, _ in RENDERERS if k == key)
+        supports_files = next(s for k, _, _, s in RENDERERS if k == key)
+
+        old = self.viewer
+        old.camera_changed.disconnect(self._on_camera_changed)
+        self._stage_layout.removeWidget(old)
+        old.deleteLater()
+
+        self._renderer = key
+        self._sync_toggle(self._renderer_buttons, key)
+        self.viewer = factory()
+        self.viewer.camera_changed.connect(self._on_camera_changed)
+        self._stage_layout.addWidget(self.viewer)
+        self.parts.set_viewer(self.viewer)
+
+        self._load_button.setEnabled(supports_files)
+        self._load_button.setToolTip(
+            "" if supports_files else "The Light renderer draws parametric scenes only"
+        )
+        self._content_version = None
+        self._apply_background()
+        if self._spec is not None:
+            self.viewer.show_scene(self._spec)
+        self._grid_button.setChecked(False)
+        self.viewer.setFocus()
+
     def _show_scene(self, spec: dict) -> None:
+        self._spec = spec
         self._with_focus(self.viewer.show_scene, spec)
 
     def _load_model(self) -> None:

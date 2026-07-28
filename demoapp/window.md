@@ -22,6 +22,7 @@ Module-level constants (root Rule #4):
 
 | Constant | Contents |
 |----------|----------|
+| `RENDERERS` | the two back ends, their labels and whether each can load files |
 | `WINDOW` | title, start size, and the minimum the layout must be able to reach |
 | `PANEL_WIDTH` / `STAGE_MINIMUM` | control-panel width; how small the 3D view may get |
 | `DEMO_SCENES` | `Axes gizmo`, `Compass axes` (multi-label arms), `Cube`, `Cube + core` — parametric specs, not model files (root Rule #19) |
@@ -39,6 +40,7 @@ The scenes deliberately omit arm colours and pass `colors: "poles"` for the cube
 #### Methods
 - `_build_header()` / `_build_stage_column()` / `_build_panel()`: layout construction
 - `_toggle_row(...)`: builds a grid of checkable buttons for a preset family and returns the `QButtonGroup`
+- `set_renderer(key)`: swap the widget in the stage and replay the current scene, background and part panel onto it, so the two renderers can be compared on the very same content
 - `_with_focus(action, *args)`: run a control's action, then return keyboard focus to the viewer
 - `_load_model()`: file dialog → `load_model()`; clears the scene selection, since what is shown is no longer a demo scene
 - `_cycle_background()` / `_apply_background()`: step through `BACKGROUNDS`, keeping the button label in sync

@@ -12,19 +12,18 @@ const AXIS_DIRECTIONS = {
     '+z': [0, 0, 1], '-z': [0, 0, -1],
 };
 
-const FACE_ORDER = ['+x', '-x', '+y', '-y', '+z', '-z'];   // BoxGeometry group order
+// Values BOTH renderers must agree on come from one file, bundled in at build
+// time here and read at run time by the Python LIGHT renderer. A colour or a
+// face order therefore cannot drift between the two (root Rules 5 and 19).
+import SHARED from '../shared/spec.json';
+
+const FACE_ORDER = SHARED.faceOrder;   // also BoxGeometry's group order
 
 // The owner's six pole hues (decree 2026-07-28). One table serves both the
 // axes gizmo and the cube's faces — the pole colour is a property of the
-// DIRECTION, not of the shape that happens to point that way (root Rule 19).
-export const POLE_COLORS = {
-    '+x': '#F97316',   // orange
-    '-x': '#3B82F6',   // blue
-    '+y': '#EAB308',   // yellow
-    '-y': '#A855F7',   // purple
-    '+z': '#22C55E',   // green
-    '-z': '#EF4444',   // red
-};
+// DIRECTION, not of the shape that happens to point that way.
+export const POLE_COLORS = SHARED.poles;
+const NEUTRAL = SHARED.neutral;
 
 // Face colours in FACE_ORDER — the default dress of a coloured cube.
 export const POLE_FACE_COLORS = FACE_ORDER.map((face) => POLE_COLORS[face]);
@@ -48,7 +47,7 @@ export const AXES_DEFAULTS = {
 
 export const CUBE_DEFAULTS = {
     size: 1,
-    color: '#818CF8',
+    color: NEUTRAL.body,
     // Per-face colours: an array in FACE_ORDER, or the string 'poles' for the
     // pole palette above. A host asks for 'poles' by name instead of copying
     // six hex values it would then have to keep in sync (root Rule 19).
@@ -105,7 +104,7 @@ function buildAxes(spec) {
 
     group.add(named(new THREE.Mesh(
         new THREE.SphereGeometry(armRadius * 2, 24, 16),
-        new THREE.MeshStandardMaterial({ color: '#B3B3B3', roughness: 0.4, metalness: 0.3 }),
+        new THREE.MeshStandardMaterial({ color: NEUTRAL.joint, roughness: 0.4, metalness: 0.3 }),
     ), 'joint'));
 
     for (const arm of arms) {
@@ -182,7 +181,7 @@ function buildCube(spec) {
     if (edges) {
         group.add(named(new THREE.LineSegments(
             new THREE.EdgesGeometry(new THREE.BoxGeometry(size, size, size)),
-            new THREE.LineBasicMaterial({ color: '#F5F5F5', transparent: true, opacity: 0.35 }),
+            new THREE.LineBasicMaterial({ color: NEUTRAL.edges, transparent: true, opacity: 0.35 }),
         ), 'edges'));
     }
     return group;
