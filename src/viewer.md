@@ -52,6 +52,8 @@ The 3D Preview container: owns the renderer, both cameras, orbit controls, studi
 #### Appearance & lifecycle
 `setBackground(color)` (CSS colour or `'transparent'`), `setGrid(enabled)`, `requestRender()`, `dispose()`.
 
+`setBackground` also **paints the container** behind the canvas and reports the colour in the viewer state. Both matter: resizing clears the canvas backing store for at least one frame, and whatever sits behind it is what the user sees in that gap — a transparent container over a white host surface is a white flash on every resize. Reporting the colour lets an embedding host paint its own surface to match without restating it. See `tests/test_background_flash.py`.
+
 ## Framing Algorithm (fitView)
 
 Measures the content's real **silhouette** from the view direction, then pulls the camera back until that silhouette fills the frustum — in BOTH axes, so a wide container is actually used.

@@ -41,10 +41,11 @@ The `QObject` JS calls into, one slot per message the page can send. `reportCame
 `set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)`, `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`.
 
 #### Appearance
-`set_background(color)` (CSS hex or `"transparent"`, which also clears the Qt page background), `set_grid(enabled)`.
+`set_background(color)` (CSS hex or `"transparent"`), `set_grid(enabled)`. The Qt page surface follows automatically — the viewer reports the colour it clears to and `_sync_background` applies it, so the colour is never restated on the Python side.
 
 ## Design Decisions
 
+- **The page surface is painted, never left at its default.** `QWebEnginePage` defaults to **opaque white**, and the host page's `html`, `body` and container are all transparent — so that white sheet sat behind everything and showed in any frame the canvas was not painted, which a resize guarantees. Pinned by `tests/test_background_flash.py`.
 - **Structured results cross as JSON strings.** QtWebEngine's direct value conversion does not survive JS arrays — an array of three strings arrives in Python as an **empty string**, with no error anywhere. Numbers and strings convert fine, so `_run_json` wraps every result-returning call in `JSON.stringify` and decodes it in Python. This cost a real debugging session; do not "simplify" it away.
 - **Queued calls keep their callback.** The page starts reporting camera state as soon as its web channel is up, which is *before* `loadFinished` reaches Python — so a host reacting to that first signal would be calling into a widget that says it is not ready. Early requests are answered late rather than refused or silently dropped.
 - **`qwebchannel.js` is injected as source**, read from the Qt resource system, rather than referenced by URL: a local `file://` page cannot reliably fetch a `qrc://` script, and the host page must behave identically from a checkout and from a wheel.

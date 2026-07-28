@@ -64,6 +64,7 @@ The viewer must render **identically** inside Python desktop apps and websites. 
     🐍 __init__.py  widget.py
   📁 demoapp/           ← Demo application window
     🐍 window.py  parts_panel.py  theme.py
+  📁 tests/             ← Regression pins (pytest)
   📁 assets/
     🖼️ logo.svg
     📁 fonts/           ← Bundled Inter (OFL)
@@ -149,5 +150,6 @@ Keys act on the viewer once it has focus (click it, or call `focus()` on its con
 - [Demo (folder)](demo/___demo.md) — standalone browser demo
 - [Preview3d Package (folder)](preview3d/___preview3d.md) — PySide6 widget wrapper
 - [Demo App (folder)](demoapp/___demoapp.md) — demo window, parts panel, theme
+- [Tests (folder)](tests/___tests.md) — regression pins and what each one guards
 - [Assets (folder)](assets/___assets.md) — logo and the bundled Inter typeface
 - [CLAUDE.md](CLAUDE.md) — AI guidance

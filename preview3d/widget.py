@@ -111,7 +111,12 @@ class Preview3DWidget(QWebEngineView):
         script.setWorldId(QWebEngineScript.ScriptWorldId.MainWorld)
         page.scripts().insert(script)
 
+        self._background = None
         self._bridge = _Bridge(self)
+        # Keep the page surface in step with the viewer BEFORE the host sees
+        # the signal, so a host that never connects still gets a widget that
+        # does not flash white (see _sync_background).
+        self._bridge.cameraReported.connect(self._sync_background)
         self._bridge.cameraReported.connect(self.camera_changed)
         self._channel = QWebChannel(self)
         self._channel.registerObject("bridge", self._bridge)
@@ -196,9 +201,11 @@ class Preview3DWidget(QWebEngineView):
     # ---- Appearance --------------------------------------------------------
 
     def set_background(self, color: str) -> None:
-        """CSS hex color, or 'transparent' for a see-through widget."""
-        if color == "transparent":
-            self.page().setBackgroundColor(QColor(0, 0, 0, 0))
+        """CSS hex color, or 'transparent' for a see-through widget.
+
+        The Qt page surface follows automatically — the viewer reports the
+        colour it ended up using and `_sync_background` applies it here.
+        """
         self._run(f"viewer.setBackground({json.dumps(color)})")
 
     def set_grid(self, enabled: bool) -> None:
@@ -206,6 +213,29 @@ class Preview3DWidget(QWebEngineView):
         self._run(f"viewer.setGrid({json.dumps(enabled)})")
 
     # ---- Internals ---------------------------------------------------------
+
+    def _sync_background(self, state: dict) -> None:
+        """Paint the Qt page surface the same colour the viewer clears to.
+
+        QWebEnginePage's default background is OPAQUE WHITE. The host page's
+        html, body and container are all transparent, so that white sheet sits
+        behind everything: any frame in which the WebGL canvas is not painted
+        shows it — and a resize clears the canvas backing store for at least
+        one frame. That is the white flash, and it is structural rather than a
+        timing race, which is why the fix is a colour and not a delay.
+        """
+        color = state.get("background")
+        if color is None or color == self._background:
+            return
+        if color == "transparent":
+            surface = QColor(0, 0, 0, 0)
+        else:
+            surface = QColor(color)
+            if not surface.isValid():
+                logger.error("Viewer reported an unusable background colour: %r", color)
+                return
+        self._background = color
+        self.page().setBackgroundColor(surface)
 
     def _run(self, code: str) -> None:
         self._dispatch(code, None)

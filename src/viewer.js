@@ -317,6 +317,7 @@ export class Viewer {
             projection: this.projection,
             grid: this.gridEnabled,
             gridStep: this.gridStep,
+            background: this.background,
             contentVersion: this._contentVersion,
         };
     }
@@ -330,13 +331,24 @@ export class Viewer {
 
     // ---- Appearance -------------------------------------------------------
 
+    // Sets the clear colour AND paints the container behind the canvas.
+    //
+    // The container matters more than it looks: resizing clears the canvas
+    // backing store for at least one frame, and whatever sits behind it is
+    // what the user sees in that gap. A transparent container over a white
+    // host surface is a white flash on every resize — structural, not a race.
+    // The reported state carries the colour so an embedding host (the Qt
+    // widget) can paint its own surface to match, without restating it.
     setBackground(color) {
+        this.background = color;
         if (color === 'transparent') {
             this.renderer.setClearColor(0x000000, 0);
             this.container.style.background = 'transparent';
         } else {
             this.renderer.setClearColor(new THREE.Color(color), 1);
+            this.container.style.background = color;
         }
+        this._notifyCamera(true);
         this.requestRender();
     }
 

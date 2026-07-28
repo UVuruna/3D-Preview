@@ -28,9 +28,10 @@ The installer-weight concern is real and unresolved. **Do not silently rewrite t
 ## Commands
 
 ```bash
-npm install        # once
-npm run build      # src/ → web/preview3d.min.js
-python main.py     # the demo app
+npm install               # once
+npm run build             # src/ → web/preview3d.min.js
+python main.py            # the demo app
+python -m pytest tests/   # regression pins
 ```
 
 ## Verification Recipe
@@ -52,6 +53,7 @@ JS console output is forwarded to Python `logging` by the widget, so JS errors s
 - **Framing measures vertices, not bounds.** `fitView()` walks real geometry because a bounding box or sphere frames star-shaped content (the axes gizmo) at ~55% of the space it should fill, and because the aggregate `halfDepth + halfHeight/tan` formula assumes the widest point is the nearest — which for anything viewed corner-on it is not. Do not reduce it to `Box3`/`getBoundingSphere`.
 - **QSS `QWidget { background: … }` leaks into every `QLabel`**, which then paints the window surface over whatever card it sits on. `demoapp/theme.py` neutralises it with an explicit `QLabel { background: transparent; }`.
 - **A translucent part must stop writing depth**, or it hides what is inside it — handled in `parts.js`, and the reason cube faces are separate double-sided meshes rather than one box mesh.
+- **`QWebEnginePage`'s background defaults to OPAQUE WHITE.** With the host page's `html`, `body` and container all transparent, that white sheet sits behind everything and shows in any frame the canvas is not painted — which a resize guarantees. The viewer reports the colour it clears to and the widget paints the page surface to match; pinned by `tests/test_background_flash.py`. Do not "simplify" the container background away either — it is the in-page half of the same fix.
 
 ## Consumers
 
