@@ -1,6 +1,6 @@
 # 3D Preview
 
-Embeddable 3D previewer — one Three.js core with orbit controls (rotate, zoom, pan), embedded by Python desktop GUIs as a PySide6 widget or by websites with a single script tag. Simple shapes (axes gizmo, cube) are computed from parametric JSON specs instead of stored model files; glTF/GLB load and export included.
+Embeddable 3D previewer — one Three.js core with orbit controls, view presets and a perspective/orthographic switch, embedded by Python desktop GUIs as a PySide6 widget or by websites with a single script tag. Every element of a scene can be shown, hidden or made translucent by name; simple shapes are computed from parametric JSON specs, and glTF/GLB models load and export.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ pip install PySide6
 python main.py
 ```
 
-A small window with the viewer and a control panel: switch between the built-in demo scenes, load a `.glb`/`.gltf` file from disk, cycle the background (dark / light / transparent), reset the view — and try the controls listed [below](#controls).
+A window with the viewer and a control panel: the built-in demo scenes, loading a `.glb`/`.gltf` file from disk, the seven view presets, perspective ↔ orthographic, the reference grid, background modes (dark / light / transparent), a live camera readout, and a parts list where every element can be hidden, dimmed or soloed.
 
 The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
@@ -36,7 +36,7 @@ The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
 The viewer must render **identically** inside Python desktop apps and websites. A browser WebGL core (**Three.js**, bundled by esbuild) is the only stack both targets share natively — websites load the bundle directly, and PySide6 embeds the same bundle through `QWebEngineView` (Chromium). One rendering implementation serves every consumer (root Rule #5).
 
-**Alternative considered:** a native Python OpenGL viewer (pyqtgraph/VTK) for GUIs plus a separate web viewer — rejected: two implementations of identical behavior, double maintenance, guaranteed feature drift. The only cost of the chosen stack is the Qt WebEngine dependency on the Python side, which PySide6 already ships.
+**Alternative considered:** a native Python viewer (software projection with QPainter, or pyqtgraph/VTK) plus a separate web viewer — rejected because it means two implementations of identical behaviour, double maintenance and guaranteed feature drift, and because it cannot serve the website consumers at all. The cost of the chosen stack is the Qt WebEngine dependency on the Python side, which PySide6 already ships but which adds weight to a consumer's installer.
 
 ---
 
@@ -48,17 +48,22 @@ The viewer must render **identically** inside Python desktop apps and websites. 
 📁 3D Preview/
   📝 README.md          ← You are here
   📝 CLAUDE.md          ← AI guidance for this project
+  📝 MODELS.md          ← How to author models whose parts can be controlled
+  📝 PLAN.md            ← Commissioning spec (DOMY Watch's brief for this gadget)
   🐍 main.py            ← Demo application (run this)
   ⚙️ package.json       ← JS build config (esbuild)
   ⚙️ pyproject.toml     ← Python package config (hatchling)
   📁 src/               ← JS core sources
-    🔧 index.js  viewer.js  primitives.js  labels.js
+    🔧 index.js  viewer.js  primitives.js  parts.js
+    🔧 views.js  grid.js  keyboard.js  labels.js
   📁 web/               ← Shipped artifact: host page + built bundle
     📄 index.html  preview3d.min.js
   📁 demo/              ← Standalone browser demo
     📄 index.html
   📁 preview3d/         ← Python package (PySide6 widget)
     🐍 __init__.py  widget.py
+  📁 demoapp/           ← Demo application window
+    🐍 window.py  parts_panel.py  theme.py
   📁 assets/
     🖼️ logo.svg
     📁 fonts/           ← Bundled Inter (OFL)
@@ -79,7 +84,9 @@ Copy `web/preview3d.min.js` next to your page:
 <script src="preview3d.min.js"></script>
 <script>
     const viewer = Preview3D.mount(document.getElementById('stage'));
-    viewer.show({ type: 'axes' });          // or {type: 'cube'}, or viewer.loadModel('model.glb')
+    viewer.show({ type: 'axes' });           // or {type: 'cube', colors: 'poles'}
+    viewer.setProjection('orthographic');    // exact isometric
+    viewer.setPartOpacity('cube/face:+z', 0.2);
 </script>
 ```
 
@@ -89,14 +96,13 @@ Copy `web/preview3d.min.js` next to your page:
 from preview3d import Preview3DWidget
 
 widget = Preview3DWidget(parent)
+widget.camera_changed.connect(lambda s: print(s["azimuth"], s["elevation"]))
 widget.show_axes(arms=[
-    {"axis": "+x", "color": "#EF4444", "label": "East"},
-    {"axis": "-x", "color": "#F97316", "label": "West"},
-    {"axis": "+y", "color": "#22C55E", "label": "Zenith"},
-    {"axis": "-y", "color": "#EAB308", "label": "Nadir"},
-    {"axis": "+z", "color": "#3B82F6", "label": "North"},
-    {"axis": "-z", "color": "#A855F7", "label": "South"},
+    {"axis": "+x", "label": ["East", "Istok", "E"]},
+    {"axis": "+y", "label": "Zenith"},
+    {"axis": "+z", "label": "North"},
 ])
+widget.show_only("axes/arm:+x/labels", "label:1")   # now the arm reads "Istok"
 ```
 
 From a repo checkout the package resolves the web bundle automatically; as a dependency install it with `pip install git+<repo-url>` (the bundle ships inside the wheel).
@@ -121,6 +127,14 @@ Node is needed only to rebuild the bundle — never to use the component; `web/p
 | Left-drag | Rotate (orbit) |
 | Scroll wheel / pinch | Zoom |
 | Right-drag | Pan |
+| Arrow keys | Move around the model in steps |
+| Ctrl + arrows | Pan — move the point being looked at |
+| Shift + ← / → | Previous / next view preset |
+| Shift + ↑ / ↓ | Top / bottom view |
+| `+` / `−` | Zoom |
+| `P` · `G` · `R` | Projection · grid · reset view |
+
+Keys act on the viewer once it has focus (click it, or call `focus()` on its container).
 
 ---
 
@@ -128,10 +142,12 @@ Node is needed only to rebuild the bundle — never to use the component; `web/p
 
 ## Documentation
 
+- [Making Models for 3D Preview](MODELS.md) — how to author or repair a model so its parts can be controlled
 - [Demo Application](main.md) — the runnable showcase and integration example
-- [Source (folder)](src/___src.md) — viewer core, parametric primitives, labels
-- [Assets (folder)](assets/___assets.md) — logo and the bundled Inter typeface
+- [Source (folder)](src/___src.md) — viewer core, primitives, parts, views, grid, keyboard, labels
 - [Web (folder)](web/___web.md) — host page and the built bundle
 - [Demo (folder)](demo/___demo.md) — standalone browser demo
 - [Preview3d Package (folder)](preview3d/___preview3d.md) — PySide6 widget wrapper
+- [Demo App (folder)](demoapp/___demoapp.md) — demo window, parts panel, theme
+- [Assets (folder)](assets/___assets.md) — logo and the bundled Inter typeface
 - [CLAUDE.md](CLAUDE.md) — AI guidance
