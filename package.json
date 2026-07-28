@@ -1,0 +1,16 @@
+{
+  "name": "preview3d",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Embeddable 3D previewer — Three.js core with orbit controls, built as one self-contained bundle",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --format=iife --global-name=Preview3D --outfile=web/preview3d.min.js"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  }
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Preview</title>
+<style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    #app { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="preview3d.min.js"></script>
+<script>
+    // The embedding side (PySide6 widget, or any host) drives this instance
+    // through the global `viewer` — e.g. viewer.show({type: 'axes'}).
+    window.viewer = Preview3D.mount(document.getElementById('app'));
+    // Async failures (model load, export) must stay visible — Rule #1.
+    window.addEventListener('unhandledrejection', (e) => console.error('3D Preview:', e.reason));
+</script>
+</body>
+</html>

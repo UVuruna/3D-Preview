@@ -1,0 +1,15 @@
+# Owner's inbox — local only (root Rule #18)
+UV/
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Logs
+logs/
