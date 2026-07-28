@@ -15,7 +15,20 @@
 <script>
     // The embedding side (PySide6 widget, or any host) drives this instance
     // through the global `viewer` — e.g. viewer.show({type: 'axes'}).
-    window.viewer = Preview3D.mount(document.getElementById('app'));
+    const container = document.getElementById('app');
+    window.viewer = Preview3D.mount(container);
+    container.focus();   // so the keyboard bindings work without a click first
+
+    // Inside QWebEngineView, push camera movement back to Python over the Qt
+    // web channel. In a plain browser `qt` is undefined and this is skipped —
+    // the same page serves both hosts.
+    if (window.qt && window.qt.webChannelTransport) {
+        new QWebChannel(qt.webChannelTransport, (channel) => {
+            const bridge = channel.objects.bridge;
+            window.viewer.onCameraChange((state) => bridge.reportCamera(state));
+        });
+    }
+
     // Async failures (model load, export) must stay visible — Rule #1.
     window.addEventListener('unhandledrejection', (e) => console.error('3D Preview:', e.reason));
 </script>
