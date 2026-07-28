@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#16161F"/>
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="23.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1.5"/>
+  <!-- orbit ring -->
+  <ellipse cx="64" cy="68" rx="48" ry="17" fill="none" stroke="#818CF8" stroke-width="2.5" stroke-dasharray="7 6" opacity="0.65"/>
+  <circle cx="112" cy="68" r="4" fill="#818CF8"/>
+  <!-- Y+ arm -->
+  <line x1="64" y1="68" x2="64" y2="31" stroke="#22C55E" stroke-width="7" stroke-linecap="round"/>
+  <polygon points="64,17 56.5,31.5 71.5,31.5" fill="#22C55E"/>
+  <!-- X+ arm -->
+  <line x1="64" y1="68" x2="95" y2="83.5" stroke="#EF4444" stroke-width="7" stroke-linecap="round"/>
+  <polygon points="106,89 91.5,89 97.3,77.4" fill="#EF4444"/>
+  <!-- Z+ arm -->
+  <line x1="64" y1="68" x2="33" y2="83.5" stroke="#3B82F6" stroke-width="7" stroke-linecap="round"/>
+  <polygon points="22,89 36.5,89 30.7,77.4" fill="#3B82F6"/>
+  <!-- joint -->
+  <circle cx="64" cy="68" r="5.5" fill="#F5F5F5"/>
+</svg>
