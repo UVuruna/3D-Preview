@@ -4,11 +4,27 @@ Embeddable 3D previewer — one Three.js core with orbit controls (rotate, zoom,
 
 ## Table of Contents
 
+- [Run the Demo](#run-the-demo)
 - [Why This Stack](#why-this-stack)
 - [Structure](#structure)
-- [Quick Start](#quick-start)
+- [Embedding](#embedding)
 - [Controls](#controls)
 - [Documentation](#documentation)
+
+---
+
+<a id="run-the-demo"></a>
+
+## Run the Demo
+
+```bash
+pip install PySide6
+python main.py
+```
+
+A small window with the viewer and a control panel: switch between the built-in demo scenes, load a `.glb`/`.gltf` file from disk, cycle the background (dark / light / transparent), reset the view — and try the controls listed [below](#controls).
+
+The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
 ---
 
@@ -32,10 +48,11 @@ The viewer must render **identically** inside Python desktop apps and websites. 
 📁 3D Preview/
   📝 README.md          ← You are here
   📝 CLAUDE.md          ← AI guidance for this project
+  🐍 main.py            ← Demo application (run this)
   ⚙️ package.json       ← JS build config (esbuild)
   ⚙️ pyproject.toml     ← Python package config (hatchling)
   📁 src/               ← JS core sources
-    🐍 index.js  viewer.js  primitives.js  labels.js
+    🔧 index.js  viewer.js  primitives.js  labels.js
   📁 web/               ← Shipped artifact: host page + built bundle
     📄 index.html  preview3d.min.js
   📁 demo/              ← Standalone browser demo
@@ -44,15 +61,14 @@ The viewer must render **identically** inside Python desktop apps and websites. 
     🐍 __init__.py  widget.py
   📁 assets/
     🖼️ logo.svg
+    📁 fonts/           ← Bundled Inter (OFL)
 ```
-
-*(File icons follow the root emoji legend; `.js` files use the generic script icon in docs trees.)*
 
 ---
 
-<a id="quick-start"></a>
+<a id="embedding"></a>
 
-## Quick Start
+## Embedding
 
 ### Website
 
@@ -92,9 +108,7 @@ npm install
 npm run build      # src/ → web/preview3d.min.js
 ```
 
-### Demo
-
-Open `demo/index.html` in a browser — axes/cube switching, GLB load, background toggle, GLB export.
+Node is needed only to rebuild the bundle — never to use the component; `web/preview3d.min.js` is committed.
 
 ---
 
@@ -114,7 +128,9 @@ Open `demo/index.html` in a browser — axes/cube switching, GLB load, backgroun
 
 ## Documentation
 
+- [Demo Application](main.md) — the runnable showcase and integration example
 - [Source (folder)](src/___src.md) — viewer core, parametric primitives, labels
+- [Assets (folder)](assets/___assets.md) — logo and the bundled Inter typeface
 - [Web (folder)](web/___web.md) — host page and the built bundle
 - [Demo (folder)](demo/___demo.md) — standalone browser demo
 - [Preview3d Package (folder)](preview3d/___preview3d.md) — PySide6 widget wrapper

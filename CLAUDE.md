@@ -20,6 +20,7 @@ An embeddable 3D viewer **component** (library, not an installable app): a Three
 ```bash
 npm install        # once
 npm run build      # src/ → web/preview3d.min.js
+python main.py     # the demo app
 ```
 
 ## Verification Recipe
@@ -27,9 +28,16 @@ npm run build      # src/ → web/preview3d.min.js
 Rendering claims require screenshots (root Guideline #1):
 
 - **Web:** Playwright headless — open `demo/index.html`, wait ~1.5s, screenshot, assert no console errors.
-- **Widget:** short PySide6 script — `Preview3DWidget`, `show_axes(...)`, `QTimer.singleShot(3500, grab)`, save `widget.grab()` to PNG and inspect it.
+- **Demo app:** import `main`, build `DemoWindow`, then `QTimer.singleShot(4000, …)` and capture with `app.primaryScreen().grabWindow(0, *window.frameGeometry())`. Grab the **screen region**, not `widget.grab()` — a nested web view composites separately and a widget grab of the window comes back without the 3D content.
+- **Controls:** Playwright on the demo page — read `viewer.camera.position` and `viewer.controls.target`, drag/wheel, read again. Rotation must move the camera while leaving the orbit distance unchanged; the wheel must shrink it.
+- **Model loading:** `viewer.exportGLB()` in the browser writes a real `.glb`; feed that file to `Preview3DWidget.load_model()` and screenshot — one test covers both file paths.
 
 JS console output is forwarded to Python `logging` by the widget, so JS errors surface in the host app's log (Rule #1).
+
+## Known Traps
+
+- **Framing measures vertices, not bounds.** `fitView()` walks real geometry because a bounding box or sphere frames star-shaped content (the axes gizmo) at ~55% of the space it should fill — its box corners sit where the shape has nothing. Do not "simplify" it back to `Box3`/`getBoundingSphere`.
+- **QSS `QWidget { background: … }` leaks into every `QLabel`**, which then paints the window surface over whatever card it sits on. `main.py` neutralizes it with an explicit `QLabel { background: transparent; }`.
 
 ## Consumers
 
