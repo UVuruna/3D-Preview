@@ -11,7 +11,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildPrimitive } from './primitives.js';
 import { buildGrid, disposeGrid } from './grid.js';
 import { attachKeyboard } from './keyboard.js';
-import { collectParts, removePart, setPartOpacity, setPartVisible, showOnly } from './parts.js';
+import {
+    collectParts, removePart, setPartOpacity, setPartPosition, setPartStroke, setPartVisible, showOnly,
+} from './parts.js';
 import { FREE_VIEW, stepView, viewDirection } from './views.js';
 import { NO_ANIMATION, Timeline } from './animation.js';
 import { parseDirection } from './directions.js';
@@ -236,6 +238,18 @@ export class Viewer {
 
     setPartOpacity(path, alpha) {
         setPartOpacity(this._content, path, alpha);
+        this.requestRender();
+    }
+
+    setPartPosition(path, position) {
+        setPartPosition(this._content, path, position);
+        this.requestRender();
+    }
+
+    // 0..1 of a line part's own length, drawn from its start toward its end —
+    // the hexagram triangles' "DRAW themselves" effect (SCENES.md).
+    setPartStroke(path, progress) {
+        setPartStroke(this._content, path, progress);
         this.requestRender();
     }
 
@@ -752,6 +766,8 @@ export class Viewer {
                 case 'camera.projection': this.setProjection(value); break;
                 case 'part.opacity': setPartOpacity(this._content, path, value); break;
                 case 'part.visible': setPartVisible(this._content, path, value); break;
+                case 'part.position': setPartPosition(this._content, path, value); break;
+                case 'part.strokeProgress': setPartStroke(this._content, path, value); break;
                 case 'group.show': showOnly(this._content, path, value); break;
                 case 'grid': if (value !== this.gridEnabled) this.setGrid(value); break;
                 case 'switcher.register': this.setSwitcher(value, null); break;

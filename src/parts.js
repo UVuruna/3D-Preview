@@ -5,6 +5,8 @@
 // the content root, e.g. `axes/arm:+x/label:1`. Naming is therefore the whole
 // contract between a model and the host — see MODELS.md.
 
+import * as THREE from 'three';
+
 const PATH_SEPARATOR = '/';
 
 // Anything the renderer actually draws.
@@ -98,6 +100,32 @@ export function showOnly(root, groupPath, childName) {
 export function setPartOpacity(root, path, alpha) {
     requirePart(root, path).userData.preview3dOpacity = alpha;
     applyEffectiveOpacity(root, 1);
+}
+
+// An absolute position, exactly as `position` in a primitive spec. Three.js
+// already carries this on every Object3D, so unlike opacity there is no
+// separate "effective" value to recompute — the LIGHT renderer's `Node`
+// carries the same one field the same way.
+export function setPartPosition(root, path, position) {
+    requirePart(root, path).position.set(...position);
+}
+
+// 0..1 of a line part's own length, drawn from its start toward its end — the
+// mirror of scene.py's `Node.stroke`. Only meaningful on a part built from
+// segments (the hexagram's triangles); anything else has nothing to shorten.
+export function setPartStroke(root, path, progress) {
+    const object = requirePart(root, path);
+    const segments = object.userData.preview3dSegments;
+    if (!segments) {
+        throw new Error(`Part '${path}' has no stroke-drawable segments to set a strokeProgress on`);
+    }
+    const clamped = Math.min(1, Math.max(0, progress));
+    const positions = [];
+    for (const [start, end] of segments) {
+        const grown = start.map((component, i) => component + (end[i] - component) * clamped);
+        positions.push(...start, ...grown);
+    }
+    object.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 }
 
 function applyEffectiveOpacity(object, inherited) {

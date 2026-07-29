@@ -192,6 +192,16 @@ class Preview3DLightWidget(QWidget):
         scene_ops.set_part_opacity(self._root, path, alpha)
         self.update()
 
+    def set_part_position(self, path: str, position) -> None:
+        scene_ops.set_part_position(self._root, path, position)
+        self.update()
+
+    def set_part_stroke(self, path: str, progress: float) -> None:
+        """0..1 of a line part's own length, drawn from its start toward its
+        end — the hexagram triangles' "DRAW themselves" effect (SCENES.md)."""
+        scene_ops.set_part_stroke(self._root, path, progress)
+        self.update()
+
     def show_only(self, group_path: str, child_name: str) -> None:
         scene_ops.show_only(self._root, group_path, child_name)
         self.update()
@@ -553,6 +563,10 @@ class Preview3DLightWidget(QWidget):
                 scene_ops.set_part_opacity(self._root, path, value)
             elif channel == "part.visible":
                 scene_ops.set_part_visible(self._root, path, value)
+            elif channel == "part.position":
+                scene_ops.set_part_position(self._root, path, value)
+            elif channel == "part.strokeProgress":
+                scene_ops.set_part_stroke(self._root, path, value)
             elif channel == "group.show":
                 scene_ops.show_only(self._root, path, value)
             elif channel == "grid":

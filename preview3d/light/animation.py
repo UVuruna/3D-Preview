@@ -69,6 +69,19 @@ def _is_number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
+def _is_vector(value) -> bool:
+    """True for a fixed-length list of numbers — `part.position`'s [x, y, z].
+
+    A vector lerps component-wise, the same rule a lone number follows; this is
+    what lets a bead (Five Stations) or a seat (the Hexagram's collapse) SLIDE
+    rather than only fade or step.
+    """
+    return (
+        isinstance(value, (list, tuple)) and len(value) > 0
+        and all(_is_number(component) for component in value)
+    )
+
+
 def _round_half_up(value: float) -> int:
     """JavaScript's Math.round. Python's built-in rounds halves to even, which
     would put the two renderers one frame apart on an exact tie."""
@@ -122,12 +135,18 @@ def sample_track(track: dict, progress: float):
     span = end["t"] - start["t"]
     if span <= 0:
         return end["value"]
-    if not (_is_number(start["value"]) and _is_number(end["value"])):
-        return start["value"]
 
     eased = ease(start.get("ease") or ANIMATION_DEFAULTS["defaultEasing"],
                  (progress - start["t"]) / span)
-    return start["value"] + (end["value"] - start["value"]) * eased
+    if _is_number(start["value"]) and _is_number(end["value"]):
+        return start["value"] + (end["value"] - start["value"]) * eased
+    if (_is_vector(start["value"]) and _is_vector(end["value"])
+            and len(start["value"]) == len(end["value"])):
+        return [
+            a + (b - a) * eased
+            for a, b in zip(start["value"], end["value"])
+        ]
+    return start["value"]     # anything else (names, flags, mismatched shapes) STEPS
 
 
 class Timeline:

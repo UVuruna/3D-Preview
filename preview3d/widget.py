@@ -209,6 +209,14 @@ class Preview3DWidget(QWebEngineView):
     def set_part_opacity(self, path: str, alpha: float) -> None:
         self._run(f"viewer.setPartOpacity({json.dumps(path)}, {alpha})")
 
+    def set_part_position(self, path: str, position) -> None:
+        self._run(f"viewer.setPartPosition({json.dumps(path)}, {json.dumps(list(position))})")
+
+    def set_part_stroke(self, path: str, progress: float) -> None:
+        """0..1 of a line part's own length, drawn from its start toward its
+        end — the hexagram triangles' "DRAW themselves" effect (SCENES.md)."""
+        self._run(f"viewer.setPartStroke({json.dumps(path)}, {progress})")
+
     def show_only(self, group_path: str, child_name: str) -> None:
         """Show one child of a switch group and hide its siblings."""
         self._run(f"viewer.showOnly({json.dumps(group_path)}, {json.dumps(child_name)})")

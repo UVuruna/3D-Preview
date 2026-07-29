@@ -76,9 +76,18 @@ function prepareTrack(track, scene) {
     return { channel: track.channel, path: track.path ?? null, keys };
 }
 
+// A fixed-length array of numbers — `part.position`'s [x, y, z]. A vector
+// lerps component-wise, the same rule a lone number follows; this is what lets
+// a bead (Five Stations) or a seat (the Hexagram's collapse) SLIDE rather than
+// only fade or step.
+function isVector(value) {
+    return Array.isArray(value) && value.length > 0 && value.every((c) => typeof c === 'number');
+}
+
 // A key's easing governs the segment that STARTS at it. Values that are not
-// both numbers cannot be interpolated, so they step — which is exactly what a
-// projection name, a visibility flag or a switch-group child needs.
+// both numbers (or both same-length vectors) cannot be interpolated, so they
+// step — which is exactly what a projection name, a visibility flag or a
+// switch-group child needs.
 export function sampleTrack(track, progress) {
     const keys = track.keys;
     const last = keys[keys.length - 1];
@@ -91,10 +100,15 @@ export function sampleTrack(track, progress) {
     const to = keys[index + 1];
     const span = to.t - from.t;
     if (span <= 0) return to.value;
-    if (typeof from.value !== 'number' || typeof to.value !== 'number') return from.value;
 
     const eased = ease(from.ease ?? ANIMATION_DEFAULTS.defaultEasing, (progress - from.t) / span);
-    return from.value + (to.value - from.value) * eased;
+    if (typeof from.value === 'number' && typeof to.value === 'number') {
+        return from.value + (to.value - from.value) * eased;
+    }
+    if (isVector(from.value) && isVector(to.value) && from.value.length === to.value.length) {
+        return from.value.map((a, i) => a + (to.value[i] - a) * eased);
+    }
+    return from.value;   // anything else (names, flags, mismatched shapes) STEPS
 }
 
 export class Timeline {

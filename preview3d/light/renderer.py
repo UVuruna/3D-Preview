@@ -43,6 +43,15 @@ _INVISIBLE = 0.01     # at or below this a part contributes nothing to the pictu
 # here than there, for no reason a reader could guess.
 LABEL_EM_RATIO = 0.57
 
+# Below this the perspective divide is unreliable rather than merely small: a
+# point past the eye's own plane projects to its mirror image on screen, not
+# off it. Three.js's WebGL pipeline clips at its camera's own near plane for
+# free; this software painter has no such stage, so a face or line with ANY
+# vertex this close (or behind) is culled WHOLE rather than drawn warped. That
+# is what lets the camera fly in close to — or "inside" — content (the
+# Blindness view's first-person vertex) without the picture tearing.
+NEAR_CULL = 1e-3
+
 
 @dataclass
 class _Item:
@@ -90,9 +99,17 @@ def iter_world_geometry(root: Node, visible_only: bool = True):
 
         for face in node.faces:
             yield "face", [to_world(p) for p in face.points], face.color, here_opacity
-        for segment in node.segments:
-            yield "line", (to_world(segment.start), to_world(segment.end),
-                           segment.width), segment.color, here_opacity
+        if node.segments and node.stroke <= 0.0:
+            pass                          # undrawn: the line has not started growing yet
+        elif node.segments and node.stroke < 1.0:
+            for segment in node.segments:
+                grown = add(segment.start, scale(sub(segment.end, segment.start), node.stroke))
+                yield "line", (to_world(segment.start), to_world(grown),
+                               segment.width), segment.color, here_opacity
+        else:
+            for segment in node.segments:
+                yield "line", (to_world(segment.start), to_world(segment.end),
+                               segment.width), segment.color, here_opacity
         for label in node.labels:
             yield "label", (to_world(label.anchor), label.text,
                             label.height * here_scale), label.color, here_opacity
@@ -229,8 +246,8 @@ def paint_scene(painter: QPainter, root: Node, camera, width: int, height: int,
 
 def _face_item(points, camera, width, height, color, opacity, eye) -> _Item | None:
     projected = [camera.project(p, width, height) for p in points]
-    if all(p[2] <= 0 for p in projected):
-        return None                      # entirely behind the eye
+    if any(p[2] <= NEAR_CULL for p in projected):
+        return None                      # any vertex behind or grazing the eye
     normal = _face_normal(points)
     if normal is None:
         return None
@@ -244,8 +261,8 @@ def _face_item(points, camera, width, height, color, opacity, eye) -> _Item | No
 def _line_item(start, end, camera, width, height, color: QColor, line_width) -> _Item | None:
     a = camera.project(start, width, height)
     b = camera.project(end, width, height)
-    if a[2] <= 0 and b[2] <= 0:
-        return None
+    if a[2] <= NEAR_CULL or b[2] <= NEAR_CULL:
+        return None                      # either end behind or grazing the eye
     return _Item((a[2] + b[2]) / 2, "line",
                  (QPointF(a[0], a[1]), QPointF(b[0], b[1]), color, line_width))
 

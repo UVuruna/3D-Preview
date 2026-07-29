@@ -54,6 +54,12 @@ class Node:
     # orientation (orientations.py); the web core carries it as a quaternion on
     # the same node.
     basis: Mat3 | None = None
+    # How much of this node's own SEGMENTS are drawn, 0..1 — a line "growing"
+    # from its start toward its end. 1.0 (the default) draws the whole line;
+    # below that, every segment is shortened toward its own start point. Only
+    # segments read this; faces and labels are unaffected, so a group holding
+    # both a stroke-drawn overlay and solid geometry never has to be split.
+    stroke: float = 1.0
     faces: list[Face] = field(default_factory=list)
     segments: list[Segment] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
@@ -137,6 +143,14 @@ def set_part_visible(root: Node, path: str, visible: bool) -> None:
 
 def set_part_opacity(root: Node, path: str, alpha: float) -> None:
     require_part(root, path).opacity = alpha
+
+
+def set_part_position(root: Node, path: str, position) -> None:
+    require_part(root, path).position = tuple(float(component) for component in position)
+
+
+def set_part_stroke(root: Node, path: str, progress: float) -> None:
+    require_part(root, path).stroke = float(progress)
 
 
 def show_only(root: Node, group_path: str, child_name: str) -> None:

@@ -48,7 +48,14 @@
 
     "labelHeight": 0.13,
     "cellLabelGap": 0.11,
-    "armLabelHeight": 0.16
+    "armLabelHeight": 0.16,
+    "beadRadiusFactor": 0.30
+  },
+
+  "hexagram": {
+    "_comment": "The Hexagram X-ray overlay: the two triangles a cube's silhouette splits into when seen down a body diagonal (six equatorial face-diagonals, root Rule 19 — computed from the chosen diagonal, never per-scene coordinates). A scene may override the colours; the builder's own defaults reuse axisColors.sacred and neutral.joint rather than inventing new hues, so nothing here restates a colour that already exists above.",
+
+    "lineWidth": 2.0
   },
 
   "axisColors": {
@@ -115,17 +122,19 @@
     "easings": ["linear", "ease-in", "ease-out", "ease-in-out", "step"],
 
     "channels": {
-      "camera.azimuth":     { "path": false },
-      "camera.elevation":   { "path": false },
-      "camera.dolly":       { "path": false },
-      "camera.projection":  { "path": false },
-      "part.opacity":       { "path": true },
-      "part.visible":       { "path": true },
-      "group.show":         { "path": true },
-      "grid":               { "path": false },
-      "switcher.register":  { "path": false },
-      "switcher.reading":   { "path": false },
-      "content.orientation":{ "path": false }
+      "camera.azimuth":      { "path": false },
+      "camera.elevation":    { "path": false },
+      "camera.dolly":        { "path": false },
+      "camera.projection":   { "path": false },
+      "part.opacity":        { "path": true },
+      "part.visible":        { "path": true },
+      "part.position":       { "path": true },
+      "part.strokeProgress": { "path": true },
+      "group.show":          { "path": true },
+      "grid":                { "path": false },
+      "switcher.register":   { "path": false },
+      "switcher.reading":    { "path": false },
+      "content.orientation": { "path": false }
     }
   }
 }
