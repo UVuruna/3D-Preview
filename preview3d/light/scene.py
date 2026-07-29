@@ -8,7 +8,7 @@ behave identically in both. `tests/test_renderer_parity.py` pins that.
 
 from dataclasses import dataclass, field
 
-from .vectors import Vec3, add, scale
+from ..vectors import Mat3, Vec3
 
 PATH_SEPARATOR = "/"
 
@@ -48,6 +48,12 @@ class Node:
     scale: float = 1.0
     visible: bool = True
     opacity: float = 1.0
+    # An optional rotation, `None` meaning none — which is the overwhelmingly
+    # common case, and why the painter can skip the matrix entirely rather than
+    # multiply every point by an identity. This is what carries a snapped cube
+    # orientation (orientations.py); the web core carries it as a quaternion on
+    # the same node.
+    basis: Mat3 | None = None
     faces: list[Face] = field(default_factory=list)
     segments: list[Segment] = field(default_factory=list)
     labels: list[Label] = field(default_factory=list)
@@ -60,14 +66,6 @@ class Node:
     def add(self, child: "Node") -> "Node":
         self.children.append(child)
         return child
-
-
-def to_world(node_chain: list[Node], point: Vec3) -> Vec3:
-    """Apply an ancestor chain's translate+uniform-scale to a local point."""
-    result = point
-    for node in reversed(node_chain):
-        result = add(scale(result, node.scale), node.position)
-    return result
 
 
 # ---- Part addressing --------------------------------------------------------
@@ -99,8 +97,22 @@ def collect_parts(root: Node) -> list[dict]:
             "drawable": node.drawable,
             "visible": node.visible,
             "opacity": node.opacity,
+            "color": node_color(node),
         })
     return parts
+
+
+def node_color(node: Node) -> str | None:
+    """What colour a part wears, or None for a pure group.
+
+    Reported because a host needs it for a legend, and because it is the only
+    way a test can check that a COMPUTED palette came out the same in both
+    renderers: the pictures cannot be compared, the values can.
+    """
+    for source in (node.faces, node.segments, node.labels):
+        if source:
+            return source[0].color.upper()
+    return None
 
 
 def find_part(root: Node, path: str) -> Node | None:

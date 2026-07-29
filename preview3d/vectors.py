@@ -1,17 +1,25 @@
-"""Minimal 3-vector helpers.
+"""Minimal 3-vector and 3x3-matrix helpers.
 
-Deliberately plain tuples and functions rather than numpy: the LIGHT renderer
-exists to keep consumers free of heavy dependencies, and the scenes it draws are
-a few hundred polygons — far below the point where vectorisation would pay.
+Deliberately plain tuples and functions rather than numpy: this component exists
+to keep consumers free of heavy dependencies, and the scenes it draws are a few
+hundred polygons — far below the point where vectorisation would pay.
+
+It sits at the package root rather than inside `light/` because the pure model
+layer (`directions`, `orientations`, `model_scene`) needs the same arithmetic and
+belongs to neither renderer.
 """
 
 import math
 
 Vec3 = tuple[float, float, float]
+# Row-major 3x3: (row0, row1, row2). A rotation's COLUMNS are the images of the
+# basis vectors, which is how `basis_matrix` builds one.
+Mat3 = tuple[Vec3, Vec3, Vec3]
 
 ORIGIN: Vec3 = (0.0, 0.0, 0.0)
 UP: Vec3 = (0.0, 1.0, 0.0)
 FORWARD: Vec3 = (0.0, 0.0, 1.0)
+IDENTITY: Mat3 = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
 
 def add(a: Vec3, b: Vec3) -> Vec3:
@@ -61,6 +69,35 @@ def basis_from(direction: Vec3) -> tuple[Vec3, Vec3, Vec3]:
     right = normalize(cross(reference, forward))
     up = cross(forward, right)
     return forward, right, up
+
+
+def basis_matrix(right: Vec3, up: Vec3, forward: Vec3) -> Mat3:
+    """The matrix whose COLUMNS are the three given axes.
+
+    Applying it maps local +X onto `right`, +Y onto `up` and +Z onto `forward` —
+    which is exactly what an orientation is (see orientations.py).
+    """
+    return (
+        (right[0], up[0], forward[0]),
+        (right[1], up[1], forward[1]),
+        (right[2], up[2], forward[2]),
+    )
+
+
+def mat_apply(matrix: Mat3, point: Vec3) -> Vec3:
+    return (
+        matrix[0][0] * point[0] + matrix[0][1] * point[1] + matrix[0][2] * point[2],
+        matrix[1][0] * point[0] + matrix[1][1] * point[1] + matrix[1][2] * point[2],
+        matrix[2][0] * point[0] + matrix[2][1] * point[1] + matrix[2][2] * point[2],
+    )
+
+
+def mat_multiply(a: Mat3, b: Mat3) -> Mat3:
+    """a . b — apply b first, then a."""
+    return tuple(
+        tuple(sum(a[row][k] * b[k][col] for k in range(3)) for col in range(3))
+        for row in range(3)
+    )
 
 
 def rotate_towards(source: Vec3, target: Vec3, point: Vec3) -> Vec3:

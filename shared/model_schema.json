@@ -1,0 +1,101 @@
+{
+  "_comment": "The MODEL schema, as DATA. A model is the content a consumer hands the viewer — axes, cells and views — and this file is the single statement of its shape, read by BOTH validators (preview3d/model.py and src/model.js). Stating it once is why a consumer's model cannot pass one renderer and fail the other. The schema language is deliberately tiny; it is described in full in MODELS.md.",
+
+  "_language": {
+    "type": "one of the primitive types below, or the name of a type declared in `types`",
+    "primitives": {
+      "string": "a non-empty string",
+      "number": "a finite number",
+      "boolean": "true or false",
+      "vector3": "an array of exactly 3 finite numbers",
+      "direction": "a direction token like '+x' or '+x-y+z', or a vector3; must not be zero-length",
+      "color": "a '#rrggbb' hex string"
+    },
+    "field": {
+      "type": "required — the field's type",
+      "required": "default false",
+      "of": "element type, for `array` and `map`",
+      "keys": "for `map`: '*' for any string, '@dotted.path' for a list in shared/spec.json, '$field' for a list on the model itself",
+      "enum": "a literal list, or '@dotted.path' / '$field' as above",
+      "length": "for `array`: the exact number of elements"
+    }
+  },
+
+  "root": "model",
+
+  "types": {
+    "model": {
+      "fields": {
+        "name":      { "type": "string", "required": true },
+        "label":     { "type": "string" },
+        "root":      { "type": "string" },
+        "size":      { "type": "number" },
+        "registers": { "type": "array", "of": "string", "enum": "@switcher.registers", "required": true },
+        "sacred":    { "type": "direction" },
+        "axes":      { "type": "array", "of": "axis", "required": true },
+        "cells":     { "type": "array", "of": "cell" },
+        "glass":     { "type": "glass" },
+        "views":     { "type": "array", "of": "view", "required": true }
+      }
+    },
+
+    "axis": {
+      "_comment": "An axis is a LINE: two opposite ends, each with its own direction, colour and vocabulary. `tier` decides its dress and its group in the scene tree.",
+      "fields": {
+        "id":   { "type": "string", "required": true },
+        "tier": { "type": "string", "enum": "@tierOrder", "required": true },
+        "name": { "type": "string" },
+        "ends": { "type": "array", "of": "end", "required": true, "length": 2 }
+      }
+    },
+
+    "end": {
+      "fields": {
+        "direction": { "type": "direction", "required": true },
+        "color":     { "type": "color", "required": true },
+        "names":     { "type": "names", "required": true }
+      }
+    },
+
+    "cell": {
+      "_comment": "A seat of the cube: a face centre, an edge midpoint, a vertex, or the centre itself.",
+      "fields": {
+        "id":       { "type": "string", "required": true },
+        "kind":     { "type": "string", "enum": ["face", "edge", "vertex", "centre"], "required": true },
+        "position": { "type": "vector3", "required": true },
+        "color":    { "type": "color", "required": true },
+        "names":    { "type": "names", "required": true }
+      }
+    },
+
+    "glass": {
+      "_comment": "The cube shell the cells are seen through. Absent means the model has no shell.",
+      "fields": {
+        "opacity": { "type": "number", "required": true },
+        "colors":  { "type": "array", "of": "color", "length": 6 }
+      }
+    },
+
+    "view": {
+      "_comment": "A named preset over ONE model — which groups speak, how opaque, and where the camera stands. The four owner models are four of these, never four hand-built scenes.",
+      "fields": {
+        "name":    { "type": "string", "required": true },
+        "label":   { "type": "string" },
+        "camera":  { "type": "direction" },
+        "opacity": { "type": "map", "keys": "*", "of": "number", "required": true }
+      }
+    },
+
+    "names": {
+      "_comment": "register -> the seat's two readings. Every register the model declares must be present, so a switcher position can never find nothing to say.",
+      "map": { "keys": "$registers", "of": "seat" }
+    },
+
+    "seat": {
+      "fields": {
+        "luminous": { "type": "string", "required": true },
+        "fallen":   { "type": "string", "required": true }
+      }
+    }
+  }
+}

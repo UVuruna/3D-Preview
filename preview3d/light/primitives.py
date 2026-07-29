@@ -8,23 +8,26 @@ renderer the identical scene description. The colour table is not restated here
 
 import math
 
+from ..directions import canonical_token, parse_direction
 from ..resources import load_shared_spec
 from .scene import Face, Label, Node, Segment
-from .vectors import UP, Vec3, add, cross, normalize, rotate_towards, scale
+from ..vectors import UP, Vec3, add, cross, normalize, rotate_towards, scale
 
 _SPEC = load_shared_spec()
 POLE_COLORS: dict[str, str] = _SPEC["poles"]
 FACE_ORDER: list[str] = _SPEC["faceOrder"]
 _NEUTRAL = _SPEC["neutral"]
+_SCENE = _SPEC["modelScene"]
 
-AXIS_DIRECTIONS: dict[str, Vec3] = {
-    "+x": (1.0, 0.0, 0.0), "-x": (-1.0, 0.0, 0.0),
-    "+y": (0.0, 1.0, 0.0), "-y": (0.0, -1.0, 0.0),
-    "+z": (0.0, 0.0, 1.0), "-z": (0.0, 0.0, -1.0),
-}
-
-AXES_DEFAULTS = {"armLength": 1.0, "armRadius": 0.03}
+# An arm's direction is no longer a six-entry lookup: it is a TOKEN or a vector,
+# resolved by the shared grammar (directions.py). The six face tokens are the
+# one-letter case of that grammar rather than a table beside it, so every spec
+# written against the old table still means exactly what it meant — and the
+# cube's six edge axes and four vertex diagonals became expressible at all.
+AXES_DEFAULTS = {"armLength": 1.0, "armRadius": 0.03, "joint": True}
 CUBE_DEFAULTS = {"size": 1.0, "color": _NEUTRAL["body"], "colors": None, "edges": True}
+MARKER_DEFAULTS = {"radius": 0.05, "color": _NEUTRAL["body"]}
+LABEL_PREFIX = "label:"
 
 # Tessellation. Higher is smoother and costs polygons; these are the point
 # where a shaft stops reading as faceted at normal preview sizes.
@@ -32,6 +35,11 @@ SHAFT_SEGMENTS = 14
 TIP_SEGMENTS = 16
 SPHERE_SEGMENTS = 12
 SPHERE_RINGS = 6
+# A model puts twenty-seven markers on screen at once, each a few percent of the
+# cube across. At that size the extra facets are invisible and the polygons are
+# not: the full sphere would be two thirds of everything this renderer sorts.
+MARKER_SEGMENTS = 8
+MARKER_RINGS = 4
 
 
 def build_primitive(spec: dict) -> Node:
@@ -57,7 +65,22 @@ def build_primitive(spec: dict) -> Node:
 
 
 def _default_arms() -> list[dict]:
-    return [{"axis": axis, "label": axis[1].upper() + axis[0]} for axis in AXIS_DIRECTIONS]
+    return [{"axis": axis, "label": axis[1].upper() + axis[0]} for axis in FACE_ORDER]
+
+
+def arm_name(arm: dict, index: int) -> str:
+    """The path segment an arm is addressed by — one rule, both renderers.
+
+    A token names itself in the cube's own letter order, so '+y+x' and '+x+y'
+    can never become two addresses for one arm. An arm given a raw vector and
+    no name falls back to its position in the list, which is at least stable.
+    """
+    if arm.get("name"):
+        return arm["name"]
+    axis = arm.get("axis")
+    if isinstance(axis, str):
+        return f"arm:{canonical_token(axis)}"
+    return f"arm:{index}"
 
 
 def build_axes(spec: dict) -> Node:
@@ -69,20 +92,27 @@ def build_axes(spec: dict) -> Node:
     shaft_length = arm_length * 0.8
     tip_length = arm_length * 0.2
 
-    joint = Node(name="joint")
-    joint.faces = _sphere(arm_radius * 2, _NEUTRAL["joint"])
-    root.add(joint)
+    # Thirteen axes drawn as thirteen gizmos would stack thirteen joints in one
+    # spot, so a model turns the joint off and names its own centre seat.
+    if spec.get("joint", AXES_DEFAULTS["joint"]):
+        joint = Node(name="joint")
+        joint.faces = _sphere(arm_radius * 2, _NEUTRAL["joint"])
+        root.add(joint)
 
-    for arm in arms:
+    for index, arm in enumerate(arms):
         axis = arm.get("axis")
-        direction = AXIS_DIRECTIONS.get(axis)
-        if direction is None:
+        if axis is None:
+            raise ValueError("Every arm needs an 'axis' — a direction token or a 3-vector")
+        direction = parse_direction(axis)
+        # An arm's colour defaults to its pole hue, exactly as in the web core;
+        # only a one-letter token HAS a pole, so anything else must say.
+        color = arm.get("color") or POLE_COLORS.get(axis if isinstance(axis, str) else "")
+        if not color:
             raise ValueError(
-                f"Unknown arm axis {axis!r} — expected one of: {', '.join(AXIS_DIRECTIONS)}"
+                f"Arm {arm_name(arm, index)!r} has no colour and its direction is not "
+                "one of the six poles, so there is none to inherit"
             )
-        # An arm's colour defaults to its pole hue, exactly as in the web core.
-        color = arm.get("color") or POLE_COLORS[axis]
-        group = root.add(Node(name=f"arm:{axis}"))
+        group = root.add(Node(name=arm_name(arm, index)))
 
         shaft = Node(name="shaft")
         shaft.faces = _cylinder(arm_radius, shaft_length, direction, 0.0, color)
@@ -92,22 +122,66 @@ def build_axes(spec: dict) -> Node:
         tip.faces = _cone(arm_radius * 2.4, tip_length, direction, shaft_length, color)
         group.add(tip)
 
+        height = float(spec.get("stopHeight", arm_length * float(_SCENE["armLabelHeight"])))
         if arm.get("label"):
-            group.add(_arm_labels(arm["label"], color, direction, arm_length))
+            group.add(_arm_labels(arm["label"], color, direction, arm_length, height))
+        for stop in arm.get("stops", ()):
+            group.add(build_stop(stop, color, height))
     return root
 
 
-def _arm_labels(label, color: str, direction: Vec3, arm_length: float) -> Node:
+def _arm_labels(label, color: str, direction: Vec3, arm_length: float, height: float) -> Node:
     """A string makes one label; a list makes a switch group with the first shown."""
     texts = label if isinstance(label, list) else [label]
     holder = Node(name="labels")
     anchor = scale(direction, arm_length * 1.16)
     for index, text in enumerate(texts):
         node = Node(name=f"label:{index}", visible=index == 0)
-        node.labels = [Label(anchor=anchor, text=str(text), color=color,
-                             height=arm_length * 0.16)]
+        node.labels = [Label(anchor=anchor, text=str(text), color=color, height=height)]
         holder.add(node)
     return holder
+
+
+def build_stop(stop: dict, color: str, height: float) -> Node:
+    """One radial stop: a switch group of one label per register.
+
+    This is what the Switcher drives (switcher.py) — a group named for the stop,
+    holding `label:<register>` children with the first shown. The stop's own
+    anchor is where it sits, which is how the radial law becomes geometry
+    rather than a caption.
+    """
+    anchor = tuple(float(component) for component in stop["anchor"])
+    holder = Node(name=stop["name"])
+    for index, (register, text) in enumerate(stop["labels"].items()):
+        node = Node(name=LABEL_PREFIX + register, visible=index == 0)
+        node.labels = [Label(anchor=anchor, text=str(text),
+                             color=stop.get("color") or color, height=height)]
+        holder.add(node)
+    return holder
+
+
+# ---- Group and marker -------------------------------------------------------
+
+
+def build_group(spec: dict) -> Node:
+    """An empty node. A model's tree is mostly groups, and a group that has to
+    be a shape is a group that cannot be empty when its family is."""
+    return Node(name=spec.get("name") or "group")
+
+
+def build_marker(spec: dict) -> Node:
+    """A seat: a small sphere, plus its radial stops. Its position comes from
+    the universal `position` field, like every other primitive's."""
+    radius = float(spec.get("radius", MARKER_DEFAULTS["radius"]))
+    color = spec.get("color") or MARKER_DEFAULTS["color"]
+    root = Node(name="marker")
+    body = Node(name="body")
+    body.faces = _sphere(radius, color, MARKER_SEGMENTS, MARKER_RINGS)
+    root.add(body)
+    height = float(spec.get("stopHeight", radius * 2.6))
+    for stop in spec.get("stops", ()):
+        root.add(build_stop(stop, color, height))
+    return root
 
 
 # ---- Cube -------------------------------------------------------------------
@@ -149,7 +223,7 @@ def build_cube(spec: dict) -> Node:
 
 def _face_quad(face: str, size: float) -> list[Vec3]:
     """One cube face, wound so its normal points outward."""
-    normal = AXIS_DIRECTIONS[face]
+    normal = parse_direction(face)
     centre = scale(normal, size / 2)
     reference = (0.0, 0.0, 1.0) if abs(normal[1]) > 0.5 else UP
     right = normalize(cross(reference, normal))
@@ -213,14 +287,15 @@ def _cone(radius: float, height: float, direction: Vec3, offset: float, color: s
     return faces
 
 
-def _sphere(radius: float, color: str) -> list[Face]:
+def _sphere(radius: float, color: str, segments: int = SPHERE_SEGMENTS,
+            rings: int = SPHERE_RINGS) -> list[Face]:
     faces = []
-    for ring in range(SPHERE_RINGS):
-        phi0 = math.pi * ring / SPHERE_RINGS
-        phi1 = math.pi * (ring + 1) / SPHERE_RINGS
-        for seg in range(SPHERE_SEGMENTS):
-            theta0 = 2 * math.pi * seg / SPHERE_SEGMENTS
-            theta1 = 2 * math.pi * (seg + 1) / SPHERE_SEGMENTS
+    for ring in range(rings):
+        phi0 = math.pi * ring / rings
+        phi1 = math.pi * (ring + 1) / rings
+        for seg in range(segments):
+            theta0 = 2 * math.pi * seg / segments
+            theta1 = 2 * math.pi * (seg + 1) / segments
             quad = [
                 _on_sphere(radius, phi0, theta0), _on_sphere(radius, phi0, theta1),
                 _on_sphere(radius, phi1, theta1), _on_sphere(radius, phi1, theta0),
@@ -237,4 +312,9 @@ def _on_sphere(radius: float, phi: float, theta: float) -> Vec3:
     )
 
 
-_BUILDERS = {"axes": build_axes, "cube": build_cube}
+_BUILDERS = {
+    "axes": build_axes,
+    "cube": build_cube,
+    "group": build_group,
+    "marker": build_marker,
+}

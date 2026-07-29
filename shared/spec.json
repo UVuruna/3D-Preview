@@ -19,6 +19,68 @@
     "body": "#818CF8"
   },
 
+  "axisLetters": { "x": [1, 0, 0], "y": [0, 1, 0], "z": [0, 0, 1] },
+
+  "axisTiers": {
+    "_comment": "A direction's TIER is decided by how many cube letters it carries: one letter is a face normal, two an edge midpoint, three a vertex diagonal. `sacred` is not a fourth geometry — it is the one vertex diagonal a model may single out, and it is dressed and sized apart from the human three.",
+
+    "primary":   { "label": "Primary",   "letters": 1, "length": 1.00, "radius": 0.030 },
+    "secondary": { "label": "Secondary", "letters": 2, "length": 0.92, "radius": 0.024 },
+    "tertiary":  { "label": "Tertiary",  "letters": 3, "length": 0.86, "radius": 0.028 },
+    "sacred":    { "label": "Sacred",    "letters": 3, "length": 1.06, "radius": 0.038 }
+  },
+
+  "tierOrder": ["primary", "secondary", "tertiary", "sacred"],
+
+  "cellKinds": {
+    "_comment": "A seat's kind decides which group it sits in and how big its marker is. Radii are fractions of the model size.",
+
+    "face":   { "group": "faces",    "radius": 0.055 },
+    "edge":   { "group": "edges",    "radius": 0.042 },
+    "vertex": { "group": "vertices", "radius": 0.050 },
+    "centre": { "group": "centre",   "radius": 0.075 }
+  },
+
+  "cellKindOrder": ["face", "edge", "vertex", "centre"],
+
+  "modelScene": {
+    "_comment": "How a model's data becomes a scene. Fractions of the model size, so one set of numbers dresses a 1-unit cube and a 100-unit one alike.",
+
+    "labelHeight": 0.13,
+    "cellLabelGap": 0.11,
+    "armLabelHeight": 0.16
+  },
+
+  "axisColors": {
+    "_comment": "Owner decree 2026-07-28. Every non-primary colour is COMPUTED from the pole hues (root Rule 19) — never enumerated per axis. A two-letter direction blends its two poles and is then THINNED BY MOONLIGHT, which is what stops any edge colour from landing on a pole hue (the naive blue+yellow collision). A three-letter direction blends its three poles and is DEEPENED, so the vertex family reads heavier than the edge family. The singled-out sacred diagonal wears none of the six: white-gold, the seventh dress.",
+
+    "moonlight": "#CFE3FF",
+    "thin": 0.38,
+    "ink": "#12101A",
+    "deepen": 0.42,
+    "sacred": "#F5E6B8",
+
+    "_thresholds": "Guards, not knobs: `minPoleDistance` is the collision rule with teeth — no derived colour may sit this close to one of the six poles. `minSeatDistance` is the weaker promise that no two seats collapse into one colour; the closest pair is inherently the two body diagonals whose three poles are complementary and therefore average to grey (currently 17 apart), so this is set just below that.",
+    "minPoleDistance": 60,
+    "minSeatDistance": 12
+  },
+
+  "switcher": {
+    "_comment": "Two independent flat parameters. `register` swaps which vocabulary speaks; `reading` chooses which radial stops are lit. Both are plain names, so a timeline steps them like any other non-numeric channel.",
+
+    "registers": ["canon", "myth", "historical", "movie"],
+    "readings": ["luminous", "fallen", "both"],
+    "stops": ["luminous", "fallen"],
+    "defaultRegister": "canon",
+    "defaultReading": "luminous",
+
+    "radial": {
+      "_comment": "The radial law: the luminous stop sits INSIDE the geometric end, the fallen stop PAST it. Factors of the arm length.",
+      "luminous": 0.72,
+      "fallen": 1.18
+    }
+  },
+
   "views": {
     "iso":    { "label": "Isometric", "direction": [1, 1, 1] },
     "front":  { "label": "Front",     "direction": [0, 0, 1] },
@@ -53,14 +115,17 @@
     "easings": ["linear", "ease-in", "ease-out", "ease-in-out", "step"],
 
     "channels": {
-      "camera.azimuth":    { "path": false },
-      "camera.elevation":  { "path": false },
-      "camera.dolly":      { "path": false },
-      "camera.projection": { "path": false },
-      "part.opacity":      { "path": true },
-      "part.visible":      { "path": true },
-      "group.show":        { "path": true },
-      "grid":              { "path": false }
+      "camera.azimuth":     { "path": false },
+      "camera.elevation":   { "path": false },
+      "camera.dolly":       { "path": false },
+      "camera.projection":  { "path": false },
+      "part.opacity":       { "path": true },
+      "part.visible":       { "path": true },
+      "group.show":         { "path": true },
+      "grid":               { "path": false },
+      "switcher.register":  { "path": false },
+      "switcher.reading":   { "path": false },
+      "content.orientation":{ "path": false }
     }
   }
 }

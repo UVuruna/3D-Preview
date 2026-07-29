@@ -32,5 +32,9 @@ export function makeLabelSprite(text, options = {}) {
     texture.anisotropy = 4;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
     sprite.scale.set(opts.worldHeight * (canvas.width / canvas.height), opts.worldHeight, 1);
+    // The colour is BAKED into the texture, so the material cannot report it —
+    // and a host asking a part what colour it is (a legend, a parity test) would
+    // otherwise be told white for every label. Record what was actually drawn.
+    sprite.userData.preview3dColor = opts.color;
     return sprite;
 }

@@ -9,7 +9,7 @@ import math
 from dataclasses import dataclass, field
 
 from ..resources import load_shared_spec
-from .vectors import Vec3, add, basis_from, dot, scale, sub
+from ..vectors import Vec3, add, basis_from, dot, scale, sub
 
 _SPEC = load_shared_spec()
 VIEWS: dict[str, dict] = _SPEC["views"]

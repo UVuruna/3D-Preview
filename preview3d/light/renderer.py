@@ -17,7 +17,7 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
 
 from .scene import Node
-from .vectors import Vec3, add, cross, dot, normalize, scale, sub
+from ..vectors import Mat3, Vec3, add, cross, dot, mat_apply, mat_multiply, normalize, scale, sub
 
 # Lighting matches the web core's single key light at (5, 8, 6) over a bright
 # neutral environment; the ambient share stands in for that environment.
@@ -35,6 +35,7 @@ GRID_DEFAULTS = {
 LABEL_FONT = "Inter"
 MIN_LABEL_PX = 7      # below this a label is unreadable; do not paint noise
 EPSILON = 1e-6
+_INVISIBLE = 0.01     # at or below this a part contributes nothing to the picture
 
 # A label's `height` is the height of the whole billboard, matching the web
 # core, where the text canvas is padded and the glyphs occupy about this
@@ -56,18 +57,36 @@ class _Item:
 def iter_world_geometry(root: Node, visible_only: bool = True):
     """Yield (kind, world data, colour, opacity) for the whole tree.
 
-    Applies each node's translate + uniform scale down the chain, and multiplies
-    opacity so dimming a group dims everything under it.
+    Applies each node's rotation, translate and uniform scale down the chain,
+    and multiplies opacity so dimming a group dims everything under it.
+
+    The rotation is carried as `None` when there is none, and the transform then
+    stays the plain scale-and-offset it always was. That matters: a rotation
+    exists only where a host snapped an orientation, and paying a matrix
+    multiply per vertex everywhere else would cost real time with nothing to
+    show for it — this walk is the hot path (root Priority A).
     """
-    def walk(node: Node, offset: Vec3, factor: float, opacity: float):
+    def walk(node: Node, offset: Vec3, basis: Mat3 | None, factor: float, opacity: float):
         if visible_only and not node.visible:
             return
-        here_offset = add(offset, scale(node.position, factor))
+        # A branch dimmed to nothing is skipped WHOLE rather than transformed
+        # and then discarded per polygon. A model view lights one family of
+        # thirteen axes and dims the rest to zero, so this is most of the scene
+        # most of the time (root Priority A — this walk is the hot path).
+        if visible_only and opacity * node.opacity <= _INVISIBLE:
+            return
+        moved = scale(node.position, factor)
+        here_offset = add(offset, mat_apply(basis, moved) if basis else moved)
+        here_basis = _compose(basis, node.basis)
         here_scale = factor * node.scale
         here_opacity = opacity * node.opacity
 
-        def to_world(point: Vec3) -> Vec3:
-            return add(here_offset, scale(point, here_scale))
+        if here_basis is None:
+            def to_world(point: Vec3) -> Vec3:
+                return add(here_offset, scale(point, here_scale))
+        else:
+            def to_world(point: Vec3) -> Vec3:
+                return add(here_offset, mat_apply(here_basis, scale(point, here_scale)))
 
         for face in node.faces:
             yield "face", [to_world(p) for p in face.points], face.color, here_opacity
@@ -79,9 +98,17 @@ def iter_world_geometry(root: Node, visible_only: bool = True):
                             label.height * here_scale), label.color, here_opacity
 
         for child in node.children:
-            yield from walk(child, here_offset, here_scale, here_opacity)
+            yield from walk(child, here_offset, here_basis, here_scale, here_opacity)
 
-    yield from walk(root, (0.0, 0.0, 0.0), 1.0, 1.0)
+    yield from walk(root, (0.0, 0.0, 0.0), None, 1.0, 1.0)
+
+
+def _compose(outer: Mat3 | None, inner: Mat3 | None) -> Mat3 | None:
+    if outer is None:
+        return inner
+    if inner is None:
+        return outer
+    return mat_multiply(outer, inner)
 
 
 def content_points(root: Node) -> list[Vec3]:
