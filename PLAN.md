@@ -1,10 +1,17 @@
 # 3D Preview — Implementation Plan
 
-**Status:** COMMISSIONING SPEC (owner-commissioned 2026-07-28; no
-code exists yet). A Gadgets-category project whose purpose is to
-serve OTHER projects as a reusable 3D PREVIEWER. First consumer:
-DOMY Watch's Encyclopedia (the Character Cube topics). This document
-is the bootstrap session's starting point.
+**Status:** COMMISSIONING SPEC (owner-commissioned 2026-07-28).
+**M1 and M2 are delivered** — see [Milestones](#milestones); M3 (the
+cinematic scenes) and M4 (the DOMY integration) remain. A
+Gadgets-category project whose purpose is to serve OTHER projects as a
+reusable 3D PREVIEWER. First consumer: DOMY Watch's Encyclopedia (the
+Character Cube topics).
+
+Where this document and the shipped code differ, the code's own docs
+are current: the stack question below was settled by the owner on
+2026-07-28 as **build both renderers** ([The Two Renderers](RENDERERS.md)),
+and the model format the Data Model section sketches is specified in
+full in [Making Models](MODELS.md).
 
 **Ownership (owner decree 2026-07-28):** this gadget is built by
 ITS OWN agent and sessions — DOMY's sessions never implement it.
@@ -311,14 +318,26 @@ lands, the clock is a data drop, not an engine change.
 
 ## Milestones
 
-- **M1 — Engine core:** model schema + loader, camera/orbit/zoom,
-  project–sort–paint pipeline, Model 1 (primary axes) in the
-  standalone app — **with the flat tweenable parameter set from day
-  one** (the Cinematic Scenes framework rule binds M1's
-  architecture). Golden projection tests from day one.
-- **M2 — The four models + Switcher:** secondary/tertiary at true
-  angles, computed colors, the glass cube, register/reading
-  switcher, snap views, the orientation-snap table feature.
+- **M1 — Engine core — DONE 2026-07-28.** Camera/orbit/zoom, the
+  project–sort–paint pipeline, parts by path, the flat tweenable
+  parameter set, golden framing measurements. Delivered TWICE, by the
+  owner's 2026-07-28 decision to build both renderers: a Three.js core
+  and a QPainter one, held together by `shared/spec.json` and the
+  parity tests. The model schema and loader the bullet also named
+  landed with M2, where the schema's shape was actually decided.
+- **M2 — The four models + Switcher — DONE 2026-07-29.** Arbitrary
+  axis directions from one token grammar (the six edge axes and four
+  vertex diagonals were previously inexpressible), the model schema as
+  shared DATA with a validator in both languages, the thirteen-axis
+  cube computed, the four owner models as four VIEWS over it, computed
+  colours with the collision rule enforced, the glass cube, the
+  register/reading Switcher as flat tweenable channels, snap views to
+  any direction, and the 24-orientation table. Pinned by angle
+  exactness, golden projections, schema validation, and cross-language
+  plus cross-renderer parity.
+  Not included, and proposed rather than assumed: the per-view **label
+  density** toggle listed under §The Switcher's "plus per-view
+  toggles".
 - **M3 — The cinematic scenes (ALL approved):** the timeline
   driver, Hexagram X-ray (both variants), the Blindness (both
   variants), the Five Stations; playback controls + INSTANT mode;

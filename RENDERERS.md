@@ -74,12 +74,17 @@ Anything a host can observe is the same on both sides.
 |-----------|------|
 | Show a scene | `show_scene(spec)`, `show_axes(...)` |
 | Parts | `list_parts(...)`, `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` |
-| Camera | `set_view`, `step_view`, `set_projection`, `orbit_by`, `set_orbit`, `pan_by`, `zoom_by`, `reset_view` |
+| Camera | `set_view`, `step_view`, `set_projection`, `orbit_by`, `set_orbit`, `pan_by`, `zoom_by`, `reset_view`, `snap_to` |
+| Models | `show_model(model, view)`, `set_model_view`, `model_views(...)` — see [Making Models](MODELS.md#model) |
+| Switcher | `set_switcher(register, reading)`, `switcher_state(...)` |
+| Orientation | `set_orientation(id)`, `step_orientation(±1)` — the cube's 24 |
 | Animation | `set_animation`, `play_animation`, `pause_animation`, `toggle_animation`, `stop_animation`, `seek_animation`, `step_frame`, `set_speed`, `jump_to_end`, `animation_state` |
 | Appearance | `set_background`, `set_grid` |
-| State | `camera_changed(dict)` — azimuth, elevation, distance, view, projection, grid, gridStep, background, contentVersion<br>`animation_changed(dict)` — scene, label, playing, time, duration, progress, speed, frame, frames, loop |
+| State | `camera_changed(dict)` — azimuth, elevation, distance, view, projection, grid, gridStep, background, contentVersion, orientation, modelView<br>`animation_changed(dict)` — scene, label, playing, time, duration, progress, speed, frame, frames, loop |
 
-One difference, and it is unavoidable: **`list_parts` and `animation_state` are asynchronous on the web renderer** (the answer has to cross into the page and back), so they take a callback. The LIGHT ones accept the same callback *and* return the value directly, so code written either way works with either renderer.
+One difference, and it is unavoidable: **`list_parts`, `animation_state`, `switcher_state` and `model_views` are asynchronous on the web renderer** (the answer has to cross into the page and back), so they take a callback. The LIGHT ones accept the same callback *and* return the value directly, so code written either way works with either renderer.
+
+**Opacity multiplies down in both.** A part's reported opacity is its OWN; dimming a group dims everything under it without changing what its children say about themselves. That was not true until the model pins caught it — the web core used to push a group's value straight onto every descendant's material, so a child claimed its parent's dimming as its own and re-lighting one child silently escaped the group.
 
 Scene specs and part paths are documented once, in [MODELS.md](MODELS.md); animation descriptors in [SCENES.md](SCENES.md). Both apply to both renderers.
 
@@ -105,7 +110,8 @@ Two implementations of one component invite drift (root Rule #5). Two mechanisms
 
 1. **`shared/spec.json`** — the pole palette, neutral colours, face order, view presets, camera defaults and the animation channel table live in ONE file, and **`shared/scenes.json`** holds the shipped scenes. The JS core imports both at build time; the Python renderer reads them at run time. A colour changed there changes in both, and a test asserts neither source restates a pole colour or its own copy of the frame rate.
 2. **`tests/test_renderer_parity.py`** — the same specs go into both widgets and the observable results are compared: part paths, initial visibility, `show_only`, opacity isolation, framing and camera state.
-3. **`tests/test_animation_parity.py`** — every shipped scene is driven to t = 0, ½ and 1 in both and compared: camera angles, projection, per-part visibility and opacity, the frame counter. The easing curves are sampled through both implementations and compared numerically, since the timeline is the one part of the component that genuinely exists twice.
+3. **`tests/test_model_parity.py`** — the model layer exists twice as well (a website has no Python, a lean Qt app has no browser), so the two implementations are run head to head and their OUTPUT compared exactly: the computed palette, the whole model, the scene spec it becomes, the 24 orientations. That is the strongest check here, because the answer is a value rather than a picture. A second half drives the same model through both widgets and compares part paths, per-part colour, the Switcher's effect and each view's opacities.
+4. **`tests/test_animation_parity.py`** — every shipped scene is driven to t = 0, ½ and 1 in both and compared: camera angles, projection, per-part visibility and opacity, the frame counter. The easing curves are sampled through both implementations and compared numerically, since the timeline is the one part of the component that genuinely exists twice.
 
 Whenever a capability is added to one renderer, it either lands in both or is recorded in the "only" lists above. An undocumented difference is a bug.
 

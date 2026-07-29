@@ -73,10 +73,15 @@ A channel is one flat parameter. That is the whole design constraint: anything t
 | `part.visible` | `true` / `false` | yes | Steps at the key |
 | `group.show` | child name | yes | Shows one child of a switch group, hides its siblings |
 | `grid` | `true` / `false` | — | The reference grid |
+| `switcher.register` | `canon` \| `myth` \| `historical` \| `movie` | — | Which vocabulary speaks — see [the Switcher](MODELS.md#switcher) |
+| `switcher.reading` | `luminous` \| `fallen` \| `both` | — | Which radial stops are lit |
+| `content.orientation` | `<face>:<spin>`, or `null` | — | One of the cube's 24 orientations; `null` is upright |
 
 Paths are the ones from [MODELS.md](MODELS.md) — `shell/face:+x`, `axes/arm:+x/labels`. An unknown path fails loudly; it is never a silent no-op.
 
 **`camera.dolly` is a factor, not a distance**, on purpose: the scene is measured against whatever framing the content happens to need, so one descriptor plays correctly on a 1-unit cube and on a 100-unit model.
+
+**The last three channels are all names**, so they step by themselves like any other non-numeric value — no easing, no special case. They are the reason the Switcher and the orientation table were built as flat parameters rather than as modes: a scene that walks the four registers, or that turns the cube through its 24 orientations, is a descriptor rather than an engine change. Driving `part.opacity` on the four view groups is likewise how a scene TWEENS from one owner model into another (`axes/primary`, `cells/faces`, `glass`, … — see [Views](MODELS.md#views)).
 
 ---
 

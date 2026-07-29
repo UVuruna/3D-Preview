@@ -13,6 +13,15 @@ How to build (or repair) a model so its elements can be **addressed** — shown,
 - [Authoring in Blender](#blender)
 - [Repairing a Model We Did Not Make](#repairing)
 - [Parametric Models — No File at All](#parametric)
+- [A MODEL — Axes, Seats and Views](#model)
+  - [Directions — One Grammar for the Whole Cube](#directions)
+  - [The Schema](#schema)
+  - [The Tree a Model Becomes](#model-tree)
+  - [Views — The Four Owner Models](#views)
+  - [The Switcher — Register and Reading](#switcher)
+  - [Orientations and Snap Views](#orientations)
+  - [Colours Are Computed](#model-colours)
+  - [Exporting a Model From Your Own Data](#exporting)
 - [The API](#api)
 - [Checklist](#checklist)
 
@@ -199,6 +208,294 @@ Every spec accepts `name`, `position`, `scale` and `children`, so an assembly is
 
 Adding a builder is documented in [Parametric Primitives](src/primitives.md).
 
+The builders that ship: `axes` (arms from the origin), `cube` (a shell of six
+named faces), `marker` (a small seat with labels), and `group` (an empty node
+that only holds children).
+
+---
+
+<a id="model"></a>
+
+## A MODEL — Axes, Seats and Views
+
+Everything above is about a SCENE — what to draw. A **model** is one level up:
+what EXISTS. It is renderer-neutral JSON that names axes, the seats they point
+at, the words each seat says in each register, and the views that decide who
+speaks. The viewer turns it into a scene; nothing about the model knows how it
+will be drawn.
+
+```python
+from preview3d import Preview3DLightWidget, build_cube_model
+
+widget = Preview3DLightWidget()
+widget.show_model(build_cube_model())          # opens on the model's first view
+widget.set_model_view("cube")                  # the glass cube
+widget.set_switcher(register="myth", reading="both")
+```
+
+```javascript
+const model = Preview3D.buildCubeModel();
+viewer.showModel(model, 'cube');
+viewer.setSwitcher('myth', 'both');
+```
+
+<a id="directions"></a>
+
+### Directions — One Grammar for the Whole Cube
+
+A direction is a **token**: one or more distinct signed cube letters. Its value
+is the NORMALISED sum of those letters.
+
+| Token | Direction | What it is |
+|-------|-----------|------------|
+| `+x`, `-z` | `(1,0,0)`, `(0,0,-1)` | a face normal — 6 of them, **3 axes** |
+| `+x+y`, `+x-z` | `(1,1,0)/√2` | an edge midpoint — 12 of them, **6 axes** |
+| `+x+y+z`, `-x+y-z` | `(1,1,1)/√3` | a vertex diagonal — 8 of them, **4 axes** |
+
+Thirteen axes, twenty-six directions, one rule (root Rule #19). The six legacy
+tokens still work because they are the **one-letter case** of that rule, not a
+table beside it. A raw unit vector is accepted anywhere a token is.
+
+- **Letter order is canonical.** `+y+x` and `+x+y` are one direction, so they
+  are one NAME — `arm:+x+y` — and an arm can never be addressable by two paths.
+- **The tier follows the letter count**: 1 → `primary`, 2 → `secondary`,
+  3 → `tertiary`. `sacred` is *not* a fourth geometry; it is the one vertex
+  diagonal a model singles out, and only the model can say which.
+- **A seat sits at its token's un-normalised vector times half the cube.** `+x`
+  lands on a face centre, `+x+y` on an edge midpoint, `+x+y+z` on a vertex —
+  so a seat is exactly where the axis end of the same name points.
+
+Angle exactness is pinned, not eyeballed: every direction's dot products are in
+`tests/test_axis_geometry.py`, together with golden screen projections.
+
+<a id="schema"></a>
+
+### The Schema
+
+The model's shape is stated once, as data, in
+[`shared/model_schema.json`](shared/model_schema.json), and read by BOTH
+validators — `preview3d/model.py` and `src/model.js`. That is what makes "it
+validates" mean the same thing on both sides.
+
+```json
+{
+  "name": "cube13",
+  "label": "The Thirteen Axes",
+  "root": "model",
+  "size": 1.0,
+  "registers": ["canon", "myth", "historical", "movie"],
+
+  "axes": [
+    {
+      "id": "+x+y",
+      "tier": "secondary",
+      "name": "+x+y / -x-y",
+      "ends": [
+        {
+          "direction": "+x+y",
+          "color": "#E5B16A",
+          "names": {
+            "canon": { "luminous": "Warmth · Clarity", "fallen": "Scorching · Glare" },
+            "myth":  { "luminous": "Hearth · Sun",     "fallen": "Wildfire · Drought" }
+          }
+        },
+        { "direction": "-x-y", "color": "#9599FA", "names": { "…": "…" } }
+      ]
+    }
+  ],
+
+  "cells": [
+    {
+      "id": "+x", "kind": "face", "position": [0.5, 0, 0], "color": "#F97316",
+      "names": { "canon": { "luminous": "Warmth", "fallen": "Scorching" } }
+    }
+  ],
+
+  "glass": { "opacity": 0.12 },
+
+  "views": [
+    { "name": "cube", "label": "The Cube", "camera": "+x+y+z",
+      "opacity": { "axes/primary": 0.55, "cells/faces": 1.0, "glass": 0.12 } }
+  ]
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `registers` | The vocabularies this model carries. Every seat must speak in **exactly** these — a switcher position can never find nothing to say |
+| `axes[].tier` | `primary` / `secondary` / `tertiary` / `sacred` — decides dress, size and which group it lands in |
+| `axes[].ends` | Exactly two, each with a direction, a colour and its `names` |
+| `cells[].kind` | `face` / `edge` / `vertex` / `centre` |
+| `names` | `register → { luminous, fallen }`; both readings are required |
+| `views[].camera` | A direction to snap to — a token or a vector |
+| `views[].opacity` | Part path → opacity, for every group in the tree |
+
+**Errors carry the path** — `model.axes[3].ends[1].color` — because a model is
+generated data and "invalid model" without a location is not something anyone
+can act on (root Rule #1).
+
+<a id="model-tree"></a>
+
+### The Tree a Model Becomes
+
+```
+model/
+  axes/
+    primary/ secondary/ tertiary/ sacred/
+      axis:+x+y/
+        arm:+x+y/
+          shaft
+          tip
+          luminous/                ← a switch group, one child per register
+            label:canon  label:myth  label:historical  label:movie
+          fallen/                  ← the same, at the other radius
+        arm:-x-y/  …
+  cells/
+    faces/ edges/ vertices/ centre/
+      cell:+x/
+        body
+        luminous/  fallen/
+  glass                            ← the shell, six named faces
+```
+
+**Every group exists whether or not it has anything in it.** That skeleton is a
+contract: a view addresses those paths to say which family speaks, so a missing
+group would be a view that fails halfway through rather than one that dims
+nothing.
+
+The **radial law** is geometry here, not a caption: an arm's `luminous` stop
+sits INSIDE the geometric end (0.72 of the arm) and its `fallen` stop PAST it
+(1.18), so a reading of *both* draws the five stations of the axis by itself.
+Seats do not carry it — a seat IS a station — so their two readings simply sit
+above and below the marker.
+
+<a id="views"></a>
+
+### Views — The Four Owner Models
+
+**The four owner models are four VIEWS over ONE model, never four hand-built
+scenes.** A view is nothing but per-group opacities plus a camera direction,
+which is also what lets an animation scene TWEEN from one owner model into
+another without any engine change.
+
+| View | Shows | Camera |
+|------|-------|--------|
+| `primary` | The 3 face axes | `+x+y+z` (isometric) |
+| `secondary` | The 6 edge axes at their TRUE angles, face axes faint behind them | `+x+y+z` |
+| `tertiary` | The 4 vertex diagonals, the sacred one dressed and sized apart | `-x+y` |
+| `cube` | Everything, glass shell at 0.12, all 27 seats visible through it | `+x+y+z` |
+
+The tertiary view stands **perpendicular to the sacred diagonal** on purpose:
+looking *down* an axis collapses it to a point, which is exactly what the
+isometric view does to `+x+y+z`.
+
+<a id="switcher"></a>
+
+### The Switcher — Register and Reading
+
+Two independent flat parameters:
+
+| Control | Values | Does |
+|---------|--------|------|
+| `register` | `canon` / `myth` / `historical` / `movie` | swaps every visible label |
+| `reading` | `luminous` / `fallen` / `both` | which radial stops are lit |
+
+Neither is a mode with its own code path. A switcher position resolves to
+ordinary part operations — the same `show_only` and `set_part_visible` a host
+could call by hand — which is why a timeline can drive `switcher.register` like
+any other channel ([Animation Scenes](SCENES.md)).
+
+**The convention it works by**, and therefore what makes *any* content
+switchable, including a consumer's own: a seat carries one group per **stop**
+(`luminous`, `fallen`), each holding one `label:<register>` child per register.
+
+```python
+widget.set_switcher(register="historical")     # reading unchanged
+widget.set_switcher(reading="both")            # register unchanged
+widget.switcher_state()                        # {"register": …, "reading": …}
+```
+
+<a id="orientations"></a>
+
+### Orientations and Snap Views
+
+A cube can be set down in exactly **24** ways, and they are computed from 6
+up-faces × 4 spins rather than stored (root Rule #19). Each is named
+`<face>:<spin>` — `+y:0` is upright.
+
+```python
+widget.set_orientation("-z:2")     # snap
+widget.step_orientation(1)         # the next in enumeration order
+widget.set_orientation(None)       # upright
+widget.snap_to("+x+y+z")           # look down a body diagonal and re-frame
+```
+
+`snap_to` exists because the seven view presets cannot express the four body
+diagonals a cube is actually read along. Snapping an orientation deliberately
+does **not** re-frame: a cube keeps its silhouette as it turns, and re-fitting
+on every step would make a stepped clock jitter for no gain.
+
+<a id="model-colours"></a>
+
+### Colours Are Computed
+
+Owner decree 2026-07-28. Twenty-six invented hex values would be twenty-six
+things to keep in sync; four rules cover every direction the cube has:
+
+| Tier | Rule |
+|------|------|
+| primary | the sealed pole hue itself |
+| secondary | blend of its two poles, **thinned by moonlight** |
+| tertiary | blend of its three poles, **deepened toward ink** |
+| sacred | none of the six — **white-gold**, the seventh dress |
+
+The thinning is not decoration. A plain blend can land on a hue the palette
+already spends (`+x+y-z` — orange, yellow and red — averages to a few units
+from the orange pole), and two seats wearing one colour is a lie about the
+structure. `verify_palette` refuses it, and every model build runs it.
+
+A seat wears **the colour of the axis end that points at it** — one formula for
+both, because they are the same place.
+
+Tunables live in `shared/spec.json` under `axisColors`; both languages read them
+and round identically, so the same seat reports the same hex in both renderers
+(`list_parts()` now carries `color`).
+
+<a id="exporting"></a>
+
+### Exporting a Model From Your Own Data
+
+**A consumer supplies the WORDS, never the geometry.** The cube's axes, seats,
+positions and colours are all derived; the only content anyone owns is the
+vocabulary.
+
+```python
+from preview3d import build_cube_model, validate
+
+model = build_cube_model(
+    name="character-cube",
+    sacred="+x+y+z",                 # which diagonal leaves the six-colour palette
+    registers=["canon", "myth"],     # a model may carry fewer than the four
+    vocabulary={
+        "canon": {
+            "+x": ("Courage", "Recklessness"),   # (luminous, fallen)
+            "-x": ("…", "…"), "+y": ("…", "…"), "-y": ("…", "…"),
+            "+z": ("…", "…"), "-z": ("…", "…"),
+            "centre": ("…", "…"),
+        },
+        "myth": { "…": "…" },
+    },
+)
+validate(model)                      # already run by the builder; free to re-check
+```
+
+Twelve words per register become fifty-four seats: a two-letter seat says what
+its two poles say, a three-letter seat what its three say, joined with ` · `.
+Write your own JSON instead if the derived wording is not what you want — it
+only has to pass the schema.
+
+The model layer imports **no Qt at all**, so an exporter script needs no GUI.
+
 ---
 
 <a id="api"></a>
@@ -214,8 +511,19 @@ Same operations on both sides; JS names are camelCase, Python snake_case.
 | Opacity 0–1 | `viewer.setPartOpacity(path, a)` | `widget.set_part_opacity(path, a)` |
 | One of a group | `viewer.showOnly(group, child)` | `widget.show_only(group, child)` |
 | Remove for good | `viewer.removePart(path)` | `widget.remove_part(path)` |
+| Show a model | `viewer.showModel(model, view)` | `widget.show_model(model, view)` |
+| Pick a view | `viewer.setModelView(name)` | `widget.set_model_view(name)` |
+| List its views | `viewer.modelViews()` | `widget.model_views(callback)` |
+| Switcher | `viewer.setSwitcher(register, reading)` | `widget.set_switcher(register=…, reading=…)` |
+| Switcher state | `viewer.switcherState()` | `widget.switcher_state(callback)` |
+| Snap the camera | `viewer.snapTo(direction)` | `widget.snap_to(direction)` |
+| Orientation | `viewer.setOrientation(id)` · `stepOrientation(±1)` | `widget.set_orientation(id)` · `step_orientation(±1)` |
 
-The Python listing is asynchronous — the answer arrives in the callback, because the model may still be loading when you ask.
+The Python listing is asynchronous — the answer arrives in the callback, because the model may still be loading when you ask. On the LIGHT widget every such method *also* returns the value outright, so code written either way drives either renderer.
+
+`listParts()` reports each part's `color` as `#RRGGBB` (or `null` for a pure group) alongside `visible` and `opacity`. That is what a legend reads — and what lets a test prove a *computed* palette came out the same in both renderers, since the pictures deliberately cannot be compared.
+
+**Opacity multiplies down.** A part's reported opacity is its OWN; dimming a group dims everything under it without changing what those children say about themselves. Both renderers implement it that way, and `tests/test_model_parity.py` pins that they agree.
 
 **Hiding is not removing.** `setPartVisible(path, false)` is the reversible one and is what toggling wants. `removePart` detaches the part and frees its geometry and materials; it is for content that must not stay in memory, and it cannot be undone without rebuilding the scene.
 
