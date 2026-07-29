@@ -28,6 +28,7 @@ from preview3d import (
 )
 
 from .flow_layout import FlowLayout, flow_size_policy
+from .model_panel import ModelPanel
 from .parts_panel import PartsPanel
 from .theme import THEME
 
@@ -136,6 +137,7 @@ class DemoWindow(QWidget):
 
         self.viewer = Preview3DWidget()
         self.parts = PartsPanel(self.viewer, THEME["space_s"])
+        self.model = ModelPanel(self.viewer, THEME, self._section, on_activate=self._on_model_shown)
         self._renderer = RENDERERS[0][0]
         self._background_index = 0
         self._content_version = None
@@ -246,6 +248,8 @@ class DemoWindow(QWidget):
         self._load_button = QPushButton("Load GLB file…")
         self._load_button.clicked.connect(self._load_model)
         layout.addWidget(self._load_button)
+
+        layout.addWidget(self.model)
 
         layout.addWidget(self._section("ANIMATION"))
         self._build_animation(layout)
@@ -408,11 +412,15 @@ class DemoWindow(QWidget):
         self.parts.set_viewer(self.viewer)
 
         self._load_button.setEnabled(supports_files)
+
         self._load_button.setToolTip(
             "" if supports_files else "The Light renderer draws parametric scenes only"
         )
         self._content_version = None
         self._apply_background()
+        # The model re-shows itself on the new widget if it was the content;
+        # otherwise it just unticks, and the primitive spec is replayed instead.
+        self.model.set_viewer(self.viewer)
         if self._spec is not None:
             self.viewer.show_scene(self._spec)
         # Carry the scene across the swap — comparing the two renderers on the
@@ -432,6 +440,7 @@ class DemoWindow(QWidget):
         # choosing content clears the animation rather than letting it fail on
         # a path that no longer exists.
         self._clear_animation()
+        self.model.clear()
         self._with_focus(self.viewer.show_scene, spec)
 
     def _load_model(self) -> None:
@@ -440,7 +449,15 @@ class DemoWindow(QWidget):
             return
         self._clear_checks(self._scene_buttons)
         self._clear_animation()
+        self.model.clear()
         self._with_focus(self.viewer.load_model, path)
+
+    # The model is content like any other: it owns the stage, so the primitive
+    # scene the renderer switch would otherwise replay has to let go of it.
+    def _on_model_shown(self) -> None:
+        self._spec = None
+        self._clear_checks(self._scene_buttons)
+        self._clear_animation()
 
     # ---- Animation ---------------------------------------------------------
 

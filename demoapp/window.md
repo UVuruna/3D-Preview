@@ -11,6 +11,7 @@ The demo application's window: the viewer stage and a control panel exposing eve
 ### Uses
 - [Preview3D Widget](../preview3d/widget.md) — one call per control
 - [Parts Panel](parts_panel.md) — the PARTS section
+- [Model Panel](model_panel.md) — the MODEL, REGISTER, READING and ORIENTATION sections
 - [Demo App (folder)](___demoapp.md) → `theme.py` — spacing tokens
 
 ### Used by
@@ -84,3 +85,4 @@ The scrub slider is both an input and a readout, so a guard flag distinguishes t
 - **Toggle states are never set optimistically.** A button reflects what the viewer reported, so a key press (`P`, `G`, Shift+arrows) updates the buttons exactly as a click would. The transport is the same: the play button reads "Pause" because the viewer says it is playing, not because it was clicked.
 - **Picking content clears the animation selection.** The viewer itself drops the scene when new content is shown (a scene is written against specific parts), so the panel only has to un-check the button and let the report that follows reset the transport.
 - **Every transport button calls `self.viewer.<method>()` at click time**, never a bound method captured at build time — the widget under it is replaced whole when the renderer is switched.
+- **A model is content like any other.** Showing one clears the primitive spec the window would otherwise replay on a renderer swap, and the [Model Panel](model_panel.md) re-shows the model instead — `on_activate` is the one line that keeps the two from both claiming the stage.

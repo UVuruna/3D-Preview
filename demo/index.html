@@ -135,6 +135,20 @@
         <h2>SCENE</h2>
         <div class="grid2" id="scenes"></div>
         <label class="file">Load GLB file…<input type="file" id="file-model" accept=".glb,.gltf"></label>
+        <h2>MODEL</h2>
+        <p class="hint">The four owner models are four VIEWS over one model — the same 13 axes each time.</p>
+        <div class="grid2" id="model-views"></div>
+        <h2>REGISTER</h2>
+        <div class="grid2" id="registers"></div>
+        <h2>READING</h2>
+        <div class="grid3" id="readings"></div>
+        <h2>ORIENTATION</h2>
+        <div class="row">
+            <span id="orientation-readout"></span>
+            <button id="btn-orient-back" title="Step through the cube's 24 orientations">−</button>
+            <button id="btn-orient-next" title="Step through the cube's 24 orientations">+</button>
+            <button id="btn-orient-reset">Upright</button>
+        </div>
         <h2>ANIMATION</h2>
         <div class="grid2" id="animations"></div>
         <div class="grid5" id="transport"></div>
@@ -226,7 +240,12 @@
     const sceneButtons = buttonRow(
         document.getElementById('scenes'),
         SCENES.map((s, i) => ({ key: String(i), label: s.name })),
-        (key) => { mark(sceneButtons, key); clearAnimation(); viewer.show(SCENES[Number(key)].spec); },
+        (key) => {
+            mark(sceneButtons, key);
+            clearAnimation();
+            clearModel();
+            viewer.show(SCENES[Number(key)].spec);
+        },
     );
     const viewButtons = buttonRow(
         document.getElementById('views'),
@@ -257,6 +276,7 @@
         if (!file) return;
         mark(sceneButtons, null);
         clearAnimation();
+        clearModel();
         const bytes = new Uint8Array(await file.arrayBuffer());
         let binary = '';
         for (const b of bytes) binary += String.fromCharCode(b);
@@ -271,6 +291,75 @@
         link.click();
         URL.revokeObjectURL(link.href);
     };
+
+    // ---- Model, Switcher, orientation --------------------------------------
+    // The demo model is the neutral thirteen-axis cube the component computes
+    // (root Rule 19 — a consumer passes its own vocabulary to the same
+    // builder). The four owner models are its four views.
+    const MODEL = Preview3D.buildCubeModel();
+    let modelView = null;
+
+    const modelButtons = buttonRow(
+        document.getElementById('model-views'),
+        MODEL.views.map((view) => ({ key: view.name, label: view.label ?? view.name })),
+        (key) => showModelView(key),
+    );
+    const registerButtons = buttonRow(
+        document.getElementById('registers'),
+        MODEL.registers.map((name) => ({ key: name, label: name[0].toUpperCase() + name.slice(1) })),
+        (key) => { viewer.setSwitcher(key, null); mark(registerButtons, key); },
+    );
+    const readingButtons = buttonRow(
+        document.getElementById('readings'),
+        Preview3D.READINGS.map((name) => ({ key: name, label: name[0].toUpperCase() + name.slice(1) })),
+        (key) => { viewer.setSwitcher(null, key); mark(readingButtons, key); },
+    );
+
+    function showModelView(name) {
+        // A view is a cheap re-dress of content already built, so it is only the
+        // FIRST press that has to build the model.
+        if (modelView === null) {
+            mark(sceneButtons, null);
+            clearAnimation();
+            viewer.showModel(MODEL, name);
+            setOrientation(null);
+            mark(registerButtons, MODEL.registers[0]);
+            mark(readingButtons, Preview3D.READINGS[0]);
+        } else {
+            viewer.setModelView(name);
+        }
+        modelView = name;
+        mark(modelButtons, name);
+    }
+
+    function clearModel() {
+        modelView = null;
+        mark(modelButtons, null);
+        mark(registerButtons, null);
+        mark(readingButtons, null);
+        setOrientation(null);
+    }
+
+    const ORIENTATIONS = Preview3D.orientationIds();
+    const orientationReadout = document.getElementById('orientation-readout');
+    let orientation = null;
+
+    function setOrientation(identifier) {
+        orientation = identifier;
+        viewer.setOrientation(identifier);
+        orientationReadout.textContent = identifier ?? `Upright (${ORIENTATIONS[0]})`;
+    }
+
+    function stepOrientation(step) {
+        const index = ORIENTATIONS.indexOf(orientation);
+        const next = index === -1 ? (step > 0 ? 0 : ORIENTATIONS.length - 1) : index + step;
+        setOrientation(ORIENTATIONS[(next + ORIENTATIONS.length) % ORIENTATIONS.length]);
+    }
+
+    document.getElementById('btn-orient-back').onclick = () => { stepOrientation(-1); focusStage(); };
+    document.getElementById('btn-orient-next').onclick = () => { stepOrientation(1); focusStage(); };
+    document.getElementById('btn-orient-reset').onclick = () => { setOrientation(null); focusStage(); };
+    setOrientation(null);
 
     // ---- Animation --------------------------------------------------------
     // Preview3D.SCENES are the descriptors from shared/scenes.json — the very
@@ -309,6 +398,7 @@
         // convention, not a timeline channel (see SCENES.md).
         if (scene.content) {
             mark(sceneButtons, null);
+            clearModel();
             viewer.show(scene.content);
         }
         mark(animationButtons, scene.name);
