@@ -168,6 +168,160 @@
     },
 
     {
+      "_comment": "Scene 1 (PLAN.md, Cinematic Scenes) — Offices variant. The camera flies to the +x+y+z body diagonal; the shell thins to glass and the projection blends to orthographic; at alignment the two triangles of the Hexagram draw themselves (part.strokeProgress) in their Court/Genesis dress (the hexagram builder's own default colours — never restated here).",
+      "name": "hexagram_offices",
+      "label": "Hexagram X-ray — Offices",
+      "duration": 9,
+      "loop": false,
+      "content": {
+        "type": "group", "name": "scene",
+        "children": [
+          { "type": "cube", "name": "shell", "colors": "poles" },
+          { "type": "hexagram", "name": "hexagram", "diagonal": "+x+y+z" },
+          { "type": "marker", "name": "seat:+x+y+z", "position": [0.5, 0.5, 0.5], "radius": 0.055, "color": "#F5E6B8" },
+          { "type": "marker", "name": "seat:centre", "position": [0, 0, 0], "radius": 0.065, "color": "#F5E6B8" },
+          { "type": "marker", "name": "seat:-x-y-z", "position": [-0.5, -0.5, -0.5], "radius": 0.055, "color": "#F5E6B8" }
+        ]
+      },
+      "tracks": [
+        { "channel": "camera.azimuth", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.55, "value": 45 }] },
+        { "channel": "camera.elevation", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.55, "value": 35.264 }] },
+        { "channel": "camera.projection", "keys": [{ "t": 0, "value": "perspective" }, { "t": 0.55, "value": "orthographic" }] },
+        { "channel": "camera.dolly", "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 1, "value": 1.15 }] },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+x",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-x",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+y",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-y",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+z",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-z",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "_comment": "The six polar-corner edges 'light as the spokes' — the SAME wireframe every cube already carries, simply raised from its usual faint 0.35 (shared/spec.json neutral.edgeOpacity) as the hexagon resolves.",
+          "channel": "part.opacity", "path": "scene/shell/edges",
+          "keys": [{ "t": 0, "value": 0.35, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.9 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:+x+y+z",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:centre",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:-x-y-z",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.strokeProgress", "path": "scene/hexagram/triangle:up",
+          "keys": [{ "t": 0.55, "value": 0, "ease": "ease-in-out" }, { "t": 0.85, "value": 1 }]
+        },
+        {
+          "channel": "part.strokeProgress", "path": "scene/hexagram/triangle:down",
+          "keys": [{ "t": 0.55, "value": 0, "ease": "ease-in-out" }, { "t": 0.85, "value": 1 }]
+        }
+      ]
+    },
+
+    {
+      "_comment": "Scene 1 — Being variant. The same flight, but at alignment the three sacred seats (Christic vertex, the centre, Diabolic vertex) visibly slide along the axis and COLLAPSE into the single centre point, animated with part.position — the owner's own image: all three become the central axis.",
+      "name": "hexagram_being",
+      "label": "Hexagram X-ray — Being",
+      "duration": 9,
+      "loop": false,
+      "content": {
+        "type": "group", "name": "scene",
+        "children": [
+          { "type": "cube", "name": "shell", "colors": "poles" },
+          { "type": "hexagram", "name": "hexagram", "diagonal": "+x+y+z" },
+          { "type": "marker", "name": "seat:+x+y+z", "position": [0.5, 0.5, 0.5], "radius": 0.055, "color": "#F5E6B8" },
+          { "type": "marker", "name": "seat:centre", "position": [0, 0, 0], "radius": 0.065, "color": "#F5E6B8" },
+          { "type": "marker", "name": "seat:-x-y-z", "position": [-0.5, -0.5, -0.5], "radius": 0.055, "color": "#F5E6B8" }
+        ]
+      },
+      "tracks": [
+        { "channel": "camera.azimuth", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.55, "value": 45 }] },
+        { "channel": "camera.elevation", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.55, "value": 35.264 }] },
+        { "channel": "camera.projection", "keys": [{ "t": 0, "value": "perspective" }, { "t": 0.55, "value": "orthographic" }] },
+        { "channel": "camera.dolly", "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 1, "value": 1.15 }] },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+x",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-x",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+y",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-y",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:+z",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/face:-z",
+          "keys": [{ "t": 0, "value": 1, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.15 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/shell/edges",
+          "keys": [{ "t": 0, "value": 0.35, "ease": "ease-in-out" }, { "t": 0.55, "value": 0.9 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:+x+y+z",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:centre",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.opacity", "path": "scene/seat:-x-y-z",
+          "keys": [{ "t": 0, "value": 0, "ease": "ease-in-out" }, { "t": 0.55, "value": 1 }]
+        },
+        {
+          "channel": "part.strokeProgress", "path": "scene/hexagram/triangle:up",
+          "keys": [{ "t": 0.55, "value": 0, "ease": "ease-in-out" }, { "t": 0.85, "value": 1 }]
+        },
+        {
+          "channel": "part.strokeProgress", "path": "scene/hexagram/triangle:down",
+          "keys": [{ "t": 0.55, "value": 0, "ease": "ease-in-out" }, { "t": 0.85, "value": 1 }]
+        },
+        {
+          "_comment": "The collapse: both sacred vertices slide to the centre point that seat:centre already occupies — 'all three become the central axis'.",
+          "channel": "part.position", "path": "scene/seat:+x+y+z",
+          "keys": [{ "t": 0.85, "value": [0.5, 0.5, 0.5], "ease": "ease-in-out" }, { "t": 1, "value": [0, 0, 0] }]
+        },
+        {
+          "channel": "part.position", "path": "scene/seat:-x-y-z",
+          "keys": [{ "t": 0.85, "value": [-0.5, -0.5, -0.5], "ease": "ease-in-out" }, { "t": 1, "value": [0, 0, 0] }]
+        }
+      ]
+    },
+
+    {
       "_comment": "The owner's case from MODELS.md — three legend terms per axis tip, showing one at a time — driven by the timeline instead of by hand. Non-numeric values are stepped, so `group.show` needs no easing.",
       "name": "legend",
       "label": "Legend cycle",
@@ -240,6 +394,233 @@
             { "t": 0.34, "value": "label:1" },
             { "t": 0.67, "value": "label:2" }
           ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "Scene 2 (PLAN.md, Cinematic Scenes) — Christic variant, on the demo model's own 'cube' view (26 seats through the glass shell). The camera flies INTO the +x+y+z vertex; the antipode's own 7-cell court (hidden_from('+x+y+z')) pulses once then fades — 19 of 26 visible — before the Centre resolution pulls the camera back and relights all 26. content.type='model' is a HOST CONVENTION the demo apps read (SCENES.md), not a timeline channel.",
+      "name": "blindness_christic",
+      "label": "The Blindness — Christic",
+      "duration": 10,
+      "loop": false,
+      "content": { "type": "model", "view": "cube" },
+      "tracks": [
+        { "channel": "camera.azimuth", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.4, "value": 45 }] },
+        { "channel": "camera.elevation", "keys": [{ "t": 0, "value": 20, "ease": "ease-in-out" }, { "t": 0.4, "value": 35.264 }] },
+        {
+          "channel": "camera.dolly",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.4, "value": 6, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 6, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:-x",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:-y",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:-z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:-x-y",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:-x-z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:-y-z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/vertices/cell:-x-y-z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "Scene 2 — Diabolic variant: the mirror flight, from -x-y-z, hiding the +x+y+z court instead. Everything else — including the Centre resolution at t=1 — is the identical choreography the Christic variant plays, per the antipode of hidden_from().",
+      "name": "blindness_diabolic",
+      "label": "The Blindness — Diabolic",
+      "duration": 10,
+      "loop": false,
+      "content": { "type": "model", "view": "cube" },
+      "tracks": [
+        { "channel": "camera.azimuth", "keys": [{ "t": 0, "value": 200, "ease": "ease-in-out" }, { "t": 0.4, "value": 225 }] },
+        { "channel": "camera.elevation", "keys": [{ "t": 0, "value": -20, "ease": "ease-in-out" }, { "t": 0.4, "value": -35.264 }] },
+        {
+          "channel": "camera.dolly",
+          "keys": [
+            { "t": 0, "value": 1, "ease": "ease-in-out" },
+            { "t": 0.4, "value": 6, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 6, "ease": "ease-in-out" },
+            { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:+x",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:+y",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/faces/cell:+z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:+x+y",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:+x+z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/edges/cell:+y+z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/cells/vertices/cell:+x+y+z",
+          "keys": [
+            { "t": 0.4, "value": 1, "ease": "linear" }, { "t": 0.46, "value": 0.15, "ease": "linear" },
+            { "t": 0.52, "value": 0.85, "ease": "ease-in-out" }, { "t": 0.65, "value": 0, "ease": "ease-in-out" },
+            { "t": 0.85, "value": 0 }, { "t": 1, "value": 1 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "_comment": "Scene 3 (PLAN.md, Cinematic Scenes) — one shipped instance of preview3d.cinematics.build_five_stations_scene(build_cube_model(), '+x+y+z'); src/cinematics.js's buildFiveStationsScene is the identical generator. It 'generalizes to any axis on demand' — the demo apps' generalize control regenerates this same descriptor for any of the 13 axes, so this JSON is the ONE shipped case rather than 13 hand-authored ones (root Rule 19).",
+      "name": "five_stations",
+      "label": "Five Stations",
+      "duration": 8.0,
+      "loop": false,
+      "content": { "type": "model", "view": "cube" },
+      "tracks": [
+        { "channel": "camera.azimuth", "keys": [{ "t": 0.0, "value": 35.0, "ease": "ease-in-out" }, { "t": 0.35, "value": 135.0 }] },
+        { "channel": "camera.elevation", "keys": [{ "t": 0.0, "value": 22.0, "ease": "ease-in-out" }, { "t": 0.35, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/glass", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/axes/primary", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/axes/secondary", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/axes/tertiary", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/cells/faces", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/cells/edges", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/cells/vertices", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 0.0 }] },
+        { "channel": "part.opacity", "path": "model/axes/sacred", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }] },
+        { "channel": "part.opacity", "path": "model/axes/sacred/axis:+x+y+z", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }] },
+        { "channel": "part.opacity", "path": "model/cells/centre", "keys": [{ "t": 0.0, "value": 1.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }] },
+        {
+          "channel": "part.position", "path": "model/axes/sacred/axis:+x+y+z/arm:+x+y+z/luminous",
+          "keys": [
+            { "t": 0.0, "value": [0.6119912853410034, 0.6119912853410034, 0.6119912853410034] },
+            { "t": 0.35, "value": [0.6119912853410034, 0.6119912853410034, 0.6119912853410034], "ease": "ease-in-out" },
+            { "t": 0.75, "value": [0.44063372544552243, 0.44063372544552243, 0.44063372544552243] }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/axes/sacred/axis:+x+y+z/arm:+x+y+z/luminous",
+          "keys": [{ "t": 0.0, "value": 0.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }]
+        },
+        {
+          "channel": "part.position", "path": "model/axes/sacred/axis:+x+y+z/arm:+x+y+z/fallen",
+          "keys": [
+            { "t": 0.0, "value": [0.6119912853410034, 0.6119912853410034, 0.6119912853410034] },
+            { "t": 0.35, "value": [0.6119912853410034, 0.6119912853410034, 0.6119912853410034], "ease": "ease-in-out" },
+            { "t": 0.75, "value": [0.7221497167023839, 0.7221497167023839, 0.7221497167023839] }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/axes/sacred/axis:+x+y+z/arm:+x+y+z/fallen",
+          "keys": [{ "t": 0.0, "value": 0.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }]
+        },
+        {
+          "channel": "part.position", "path": "model/axes/sacred/axis:+x+y+z/arm:-x-y-z/luminous",
+          "keys": [
+            { "t": 0.0, "value": [-0.6119912853410034, -0.6119912853410034, -0.6119912853410034] },
+            { "t": 0.35, "value": [-0.6119912853410034, -0.6119912853410034, -0.6119912853410034], "ease": "ease-in-out" },
+            { "t": 0.75, "value": [-0.44063372544552243, -0.44063372544552243, -0.44063372544552243] }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/axes/sacred/axis:+x+y+z/arm:-x-y-z/luminous",
+          "keys": [{ "t": 0.0, "value": 0.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }]
+        },
+        {
+          "channel": "part.position", "path": "model/axes/sacred/axis:+x+y+z/arm:-x-y-z/fallen",
+          "keys": [
+            { "t": 0.0, "value": [-0.6119912853410034, -0.6119912853410034, -0.6119912853410034] },
+            { "t": 0.35, "value": [-0.6119912853410034, -0.6119912853410034, -0.6119912853410034], "ease": "ease-in-out" },
+            { "t": 0.75, "value": [-0.7221497167023839, -0.7221497167023839, -0.7221497167023839] }
+          ]
+        },
+        {
+          "channel": "part.opacity", "path": "model/axes/sacred/axis:+x+y+z/arm:-x-y-z/fallen",
+          "keys": [{ "t": 0.0, "value": 0.0, "ease": "ease-in-out" }, { "t": 0.75, "value": 1.0 }]
         }
       ]
     }
