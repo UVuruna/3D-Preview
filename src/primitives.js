@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { makeLabelSprite } from './labels.js';
-import { canonicalToken, parseDirection } from './directions.js';
+import { canonicalToken, oppositeToken, parseDirection, tokenVector, vertexNeighbors } from './directions.js';
 
 // Values BOTH renderers must agree on come from one file, bundled in at build
 // time here and read at run time by the Python LIGHT renderer. A colour or a
@@ -14,6 +14,8 @@ import SHARED from '../shared/spec.json';
 
 const FACE_ORDER = SHARED.faceOrder;   // also BoxGeometry's group order
 const SCENE = SHARED.modelScene;
+const HEXAGRAM = SHARED.hexagram;
+const BEAD_RADIUS_FACTOR = SCENE.beadRadiusFactor;
 const LABEL_PREFIX = 'label:';
 
 // The owner's six pole hues (decree 2026-07-28). One table serves both the
@@ -21,6 +23,7 @@ const LABEL_PREFIX = 'label:';
 // DIRECTION, not of the shape that happens to point that way.
 export const POLE_COLORS = SHARED.poles;
 const NEUTRAL = SHARED.neutral;
+const AXIS_COLORS = SHARED.axisColors;
 
 // Face colours in FACE_ORDER — the default dress of a coloured cube.
 export const POLE_FACE_COLORS = FACE_ORDER.map((face) => POLE_COLORS[face]);
@@ -65,6 +68,7 @@ const BUILDERS = {
     cube: buildCube,
     group: buildGroup,
     marker: buildMarker,
+    hexagram: buildHexagram,
 };
 
 // Universal spec fields, honoured for every primitive:
@@ -162,7 +166,10 @@ function buildAxes(spec) {
         armGroup.add(tip);
 
         if (arm.label) armGroup.add(buildArmLabels(arm, color, direction, armLength, stopHeight));
-        for (const stop of arm.stops ?? []) armGroup.add(buildStop(stop, color, stopHeight));
+        // An axis stop gets a small bead: unlike a cell, an arm's stop has no
+        // marker sphere of its own, and "Five beads slide to their stations"
+        // (PLAN.md, The Five Stations) needs something visible to slide.
+        for (const stop of arm.stops ?? []) armGroup.add(buildStop(stop, color, stopHeight, true));
         group.add(armGroup);
     });
     return group;
@@ -182,17 +189,29 @@ function buildArmLabels(arm, color, direction, armLength, height) {
 
 // One radial stop: a switch group of one label per register. This is what the
 // Switcher drives (switcher.js) — a group named for the stop, holding
-// `label:<register>` children with the first shown. The stop's own anchor is
-// where it sits, which is how the radial law becomes geometry rather than a
-// caption.
-function buildStop(stop, color, height) {
-    const holder = named(new THREE.Group(), stop.name);
+// `label:<register>` children with the first shown. The stop itself SITS at
+// its anchor (the group's own `.position`, not a per-label offset) so a scene
+// can address it directly with `part.position` — the channel the Five
+// Stations scene tweens to slide a stop from the geometric vertex to its final
+// radial factor (SCENES.md). Labels then anchor at the LOCAL origin, which is
+// exactly where the stop already put them.
+function buildStop(stop, color, height, bead = false) {
+    // A bead-bearing stop is a MESH (its own geometry) that also holds label
+    // children — never a separate "bead" child — so the part TREE matches the
+    // LIGHT renderer exactly, where the same Node carries both its own faces
+    // and its children (scene.py's `Node.drawable`).
+    const holder = bead
+        ? named(new THREE.Mesh(
+            new THREE.SphereGeometry(height * BEAD_RADIUS_FACTOR, 16, 10),
+            standardMaterial(stop.color ?? color),
+        ), stop.name)
+        : named(new THREE.Group(), stop.name);
+    holder.position.set(...stop.anchor);
     Object.entries(stop.labels).forEach(([register, text], index) => {
         const sprite = named(
             makeLabelSprite(String(text), { color: stop.color ?? color, worldHeight: height }),
             LABEL_PREFIX + register,
         );
-        sprite.position.set(...stop.anchor);
         sprite.visible = index === 0;
         holder.add(sprite);
     });
@@ -254,6 +273,53 @@ function buildCube(spec) {
         group.add(wireframe);
     }
     return group;
+}
+
+// ---- Hexagram ---------------------------------------------------------------
+
+// The two triangles a cube's silhouette splits into, seen down `diagonal`.
+// Computed from the cube's own geometry (root Rule 19), never per-scene
+// coordinates: each pole of the chosen body diagonal has three edge-neighbour
+// vertices (vertexNeighbors), and those two triangles ARE the six "equatorial
+// face-diagonals" the Hexagram X-ray draws itself into. Each triangle is one
+// LineSegments object holding all three sides, so a single
+// `part.strokeProgress` on `hexagram/triangle:up` (or `:down`) draws all three
+// at once — the "DRAW themselves" beat of Scene 1 (SCENES.md).
+function buildHexagram(spec) {
+    if (spec.diagonal == null) throw new Error("A hexagram needs a 'diagonal' — a vertex direction token");
+    const size = spec.size ?? 1;
+    const upColor = spec.upColor ?? AXIS_COLORS.sacred;
+    const downColor = spec.downColor ?? NEUTRAL.joint;
+    const width = spec.lineWidth ?? HEXAGRAM.lineWidth;
+
+    const pole = canonicalToken(spec.diagonal);
+    const root = named(new THREE.Group(), 'hexagram');
+    root.add(buildTriangle('triangle:up', pole, size, upColor, width));
+    root.add(buildTriangle('triangle:down', oppositeToken(pole), size, downColor, width));
+    return root;
+}
+
+// A vertex's position is its token's UN-normalised vector times half the cube
+// — same rule as a model's cells (cubemodel.js) — so a triangle corner lands
+// exactly on the cube's own vertex, never on an approximation of it.
+function buildTriangle(name, pole, size, color, width) {
+    const half = size / 2;
+    const corners = vertexNeighbors(pole).map((vertex) => tokenVector(vertex).map((c) => c * half));
+    const positions = [];
+    for (let i = 0; i < 3; i++) {
+        positions.push(...corners[i], ...corners[(i + 1) % 3]);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    // linewidth is a WebGL limitation (most platforms render 1px regardless);
+    // it is still declared so the intent is visible and future GL backends honour it.
+    const material = new THREE.LineBasicMaterial({ color, linewidth: width });
+    const node = named(new THREE.LineSegments(geometry, material), name);
+    // The FULL, un-stroked endpoints — `setPartStroke` (parts.js) shortens each
+    // segment toward its start from this, the same rule scene.py's renderer
+    // applies to a Node's `stroke` field.
+    node.userData.preview3dSegments = corners.map((_, i) => [corners[i], corners[(i + 1) % 3]]);
+    return node;
 }
 
 // One face: a plane pushed out to the cube's surface and turned to face

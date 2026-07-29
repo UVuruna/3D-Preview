@@ -148,6 +148,50 @@ export function cubeAxes(letters) {
     return cubeTokens(letters).filter(isPositiveEnd).map((token) => [token, oppositeToken(token)]);
 }
 
+// The three vertices an edge away from `vertex` — flip exactly one of its own
+// letters' signs, keep the other two. Computed from the vertex's own letters
+// (root Rule 19), never listed: this is what makes a cube's silhouette hexagon
+// (seen down the OPPOSITE diagonal) split into two triangles — one per pole's
+// own three neighbours — which is the geometry the Hexagram X-ray draws.
+export function vertexNeighbors(vertex) {
+    const signed = tokenLetters(vertex);
+    if (signed.length !== 3) throw new Error(`vertexNeighbors needs a vertex token (3 letters), got '${vertex}'`);
+    const neighbors = [];
+    for (let index = 0; index < 3; index++) {
+        const flipped = signed.map((pair) => [...pair]);
+        flipped[index][1] = -flipped[index][1];
+        neighbors.push(canonicalToken(
+            flipped.map(([letter, sign]) => (sign > 0 ? '+' : '-') + letter).join(''),
+        ));
+    }
+    return neighbors;
+}
+
+// The seven cells hidden behind `vertex`'s own view: the ANTIPODE vertex, its
+// three adjacent edges and its three adjacent faces — every cell sharing the
+// antipode's sign combination (the Blindness law: 26 - 7 = 19 visible).
+// Computed from the antipode's own letters (root Rule 19), never enumerated.
+export function hiddenFrom(vertex) {
+    const antipode = tokenLetters(oppositeToken(vertex));
+    if (antipode.length !== 3) throw new Error(`hiddenFrom needs a vertex token (3 letters), got '${vertex}'`);
+    const hidden = [];
+    for (const count of [1, 2, 3]) {
+        for (const combo of combinationsOf(antipode, count)) {
+            hidden.push(canonicalToken(combo.map(([letter, sign]) => (sign > 0 ? '+' : '-') + letter).join('')));
+        }
+    }
+    return hidden;
+}
+
+function combinationsOf(items, count) {
+    if (count === 0) return [[]];
+    if (items.length < count) return [];
+    const [first, ...rest] = items;
+    const withFirst = combinationsOf(rest, count - 1).map((combo) => [first, ...combo]);
+    const withoutFirst = combinationsOf(rest, count);
+    return [...withFirst, ...withoutFirst];
+}
+
 // The token for a direction that IS one of the cube's 26, or a failure.
 export function tokenOf(vector) {
     const target = parseDirection(vector);

@@ -23,6 +23,7 @@ drift between them.
 """
 
 import math
+from itertools import combinations
 
 from .resources import load_shared_spec
 from .vectors import Vec3, normalize
@@ -178,6 +179,50 @@ def cube_axes(letters: int) -> list[tuple[str, str]]:
         for token in cube_tokens(letters)
         if is_positive_end(token)
     ]
+
+
+def vertex_neighbors(vertex: str) -> list[str]:
+    """The three vertices an edge away from `vertex` — flip exactly one of its
+    own letters' signs, keep the other two.
+
+    Computed from the vertex's own letters (root Rule 19), never listed: this is
+    what makes a cube's silhouette hexagon (seen down the OPPOSITE diagonal)
+    split into two triangles — one per pole's own three neighbours — which is
+    the geometry the Hexagram X-ray draws.
+    """
+    signed = token_letters(vertex)
+    if len(signed) != 3:
+        raise ValueError(f"vertex_neighbors needs a vertex token (3 letters), got {vertex!r}")
+    neighbors = []
+    for index in range(3):
+        flipped = list(signed)
+        letter, sign = flipped[index]
+        flipped[index] = (letter, -sign)
+        neighbors.append(canonical_token(
+            "".join(("+" if s > 0 else "-") + letter for letter, s in flipped)
+        ))
+    return neighbors
+
+
+def hidden_from(vertex: str) -> list[str]:
+    """The seven cells hidden behind `vertex`'s own view: the ANTIPODE vertex,
+    its three adjacent edges and its three adjacent faces.
+
+    Standing at one vertex of the cube, the antipode's own "court" — every cell
+    that shares the antipode's sign combination — sits directly behind it and
+    out of sight (the Blindness law: 26 - 7 = 19 visible). Computed from the
+    antipode's own letters (root Rule 19), never enumerated per vertex.
+    """
+    antipode = token_letters(opposite_token(vertex))
+    if len(antipode) != 3:
+        raise ValueError(f"hidden_from needs a vertex token (3 letters), got {vertex!r}")
+    hidden = []
+    for count in (1, 2, 3):
+        for combo in combinations(antipode, count):
+            hidden.append(canonical_token(
+                "".join(("+" if sign > 0 else "-") + letter for letter, sign in combo)
+            ))
+    return hidden
 
 
 def token_of(vector: Vec3) -> str:

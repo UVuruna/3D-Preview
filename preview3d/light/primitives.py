@@ -8,7 +8,7 @@ renderer the identical scene description. The colour table is not restated here
 
 import math
 
-from ..directions import canonical_token, parse_direction
+from ..directions import canonical_token, opposite_token, parse_direction, token_vector, vertex_neighbors
 from ..resources import load_shared_spec
 from .scene import Face, Label, Node, Segment
 from ..vectors import UP, Vec3, add, cross, normalize, rotate_towards, scale
@@ -18,6 +18,9 @@ POLE_COLORS: dict[str, str] = _SPEC["poles"]
 FACE_ORDER: list[str] = _SPEC["faceOrder"]
 _NEUTRAL = _SPEC["neutral"]
 _SCENE = _SPEC["modelScene"]
+_COLORS = _SPEC["axisColors"]
+_HEXAGRAM = _SPEC["hexagram"]
+BEAD_RADIUS_FACTOR: float = float(_SCENE["beadRadiusFactor"])
 
 # An arm's direction is no longer a six-entry lookup: it is a TOKEN or a vector,
 # resolved by the shared grammar (directions.py). The six face tokens are the
@@ -126,7 +129,10 @@ def build_axes(spec: dict) -> Node:
         if arm.get("label"):
             group.add(_arm_labels(arm["label"], color, direction, arm_length, height))
         for stop in arm.get("stops", ()):
-            group.add(build_stop(stop, color, height))
+            # An axis stop gets a small bead: unlike a cell, an arm's stop has no
+            # marker sphere of its own, and "Five beads slide to their stations"
+            # (PLAN.md, The Five Stations) needs something visible to slide.
+            group.add(build_stop(stop, color, height, bead=True))
     return root
 
 
@@ -142,19 +148,24 @@ def _arm_labels(label, color: str, direction: Vec3, arm_length: float, height: f
     return holder
 
 
-def build_stop(stop: dict, color: str, height: float) -> Node:
+def build_stop(stop: dict, color: str, height: float, bead: bool = False) -> Node:
     """One radial stop: a switch group of one label per register.
 
     This is what the Switcher drives (switcher.py) — a group named for the stop,
-    holding `label:<register>` children with the first shown. The stop's own
-    anchor is where it sits, which is how the radial law becomes geometry
-    rather than a caption.
+    holding `label:<register>` children with the first shown. The stop itself
+    SITS at its anchor (`Node.position`, not a per-label offset) so a scene can
+    address it directly with `part.position` — the channel the Five Stations
+    scene tweens to slide a stop from the geometric vertex to its final radial
+    factor (SCENES.md). Labels then anchor at the LOCAL origin, which is exactly
+    where the stop already put them.
     """
     anchor = tuple(float(component) for component in stop["anchor"])
-    holder = Node(name=stop["name"])
+    holder = Node(name=stop["name"], position=anchor)
+    if bead:
+        holder.faces = _sphere(height * BEAD_RADIUS_FACTOR, stop.get("color") or color)
     for index, (register, text) in enumerate(stop["labels"].items()):
         node = Node(name=LABEL_PREFIX + register, visible=index == 0)
-        node.labels = [Label(anchor=anchor, text=str(text),
+        node.labels = [Label(anchor=(0.0, 0.0, 0.0), text=str(text),
                              color=stop.get("color") or color, height=height)]
         holder.add(node)
     return holder
@@ -219,6 +230,48 @@ def build_cube(spec: dict) -> Node:
         node.segments = _cube_edges(size, _NEUTRAL["edges"])
         root.add(node)
     return root
+
+
+# ---- Hexagram ----------------------------------------------------------------
+
+
+def build_hexagram(spec: dict) -> Node:
+    """The two triangles a cube's silhouette splits into, seen down `diagonal`.
+
+    Computed from the cube's own geometry (root Rule 19), never per-scene
+    coordinates: each pole of the chosen body diagonal has three edge-neighbour
+    vertices (`vertex_neighbors`), and those two triangles ARE the six
+    "equatorial face-diagonals" the Hexagram X-ray draws itself into. Each
+    triangle is one Node holding its three segments, so a single
+    `part.strokeProgress` on `hexagram/triangle:up` (or `:down`) draws all three
+    sides at once — the "DRAW themselves" beat of Scene 1 (SCENES.md).
+    """
+    diagonal = spec.get("diagonal")
+    if diagonal is None:
+        raise ValueError("A hexagram needs a 'diagonal' — a vertex direction token")
+    size = float(spec.get("size", 1.0))
+    up_color = spec.get("upColor") or _COLORS["sacred"]
+    down_color = spec.get("downColor") or _NEUTRAL["joint"]
+    width = float(spec.get("lineWidth", _HEXAGRAM["lineWidth"]))
+
+    root = Node(name="hexagram")
+    root.add(_triangle("triangle:up", canonical_token(diagonal), size, up_color, width))
+    root.add(_triangle("triangle:down", opposite_token(canonical_token(diagonal)), size, down_color, width))
+    return root
+
+
+def _triangle(name: str, pole: str, size: float, color: str, width: float) -> Node:
+    """A vertex's position is its token's UN-normalised vector times half the
+    cube — same rule as a model's cells (cube_model.py), so a triangle corner
+    lands exactly on the cube's own vertex, never on an approximation of it."""
+    half = size / 2
+    corners = [scale(token_vector(vertex), half) for vertex in vertex_neighbors(pole)]
+    node = Node(name=name)
+    node.segments = [
+        Segment(start=corners[i], end=corners[(i + 1) % 3], color=color, width=width)
+        for i in range(3)
+    ]
+    return node
 
 
 def _face_quad(face: str, size: float) -> list[Vec3]:
@@ -317,4 +370,5 @@ _BUILDERS = {
     "cube": build_cube,
     "group": build_group,
     "marker": build_marker,
+    "hexagram": build_hexagram,
 }
