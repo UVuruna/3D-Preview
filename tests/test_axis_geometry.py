@@ -21,12 +21,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from preview3d.directions import (  # noqa: E402
-    canonical_token, cube_axes, cube_tokens, opposite_token, parse_direction,
-    tier_of, token_of, token_vector,
+    canonical_token, cube_axes, cube_tokens, hidden_from, opposite_token,
+    parse_direction, tier_of, token_of, token_vector, vertex_neighbors,
 )
 from preview3d.light.camera import Camera  # noqa: E402
-from preview3d.light.primitives import arm_name, build_axes  # noqa: E402
-from preview3d.light.scene import collect_parts  # noqa: E402
+from preview3d.light.primitives import arm_name, build_axes, build_primitive  # noqa: E402
+from preview3d.light.renderer import NEAR_CULL, _face_item  # noqa: E402
+from preview3d.light.scene import Node, collect_parts  # noqa: E402
 
 ROOT_HALF = 1 / math.sqrt(2)      # a two-letter direction's share of each parent
 ROOT_THIRD = 1 / math.sqrt(3)     # a three-letter direction's share of each parent
@@ -138,6 +139,64 @@ def test_a_seat_sits_where_its_axis_end_points():
     assert token_vector("-x+y-z") == (-1.0, 1.0, -1.0)
 
 
+# ---- Hexagram and Blindness geometry (M3) -----------------------------------
+
+
+@pytest.mark.parametrize("vertex", cube_tokens(3))
+def test_vertex_neighbors_are_exactly_one_flip_away(vertex):
+    """Each of the three neighbours shares two of the vertex's own letters and
+    flips the third — the definition of a cube EDGE, not an approximation of it."""
+    neighbors = vertex_neighbors(vertex)
+    assert len(neighbors) == 3
+    assert len(set(neighbors)) == 3        # no vertex is its own neighbour twice
+    assert vertex not in neighbors
+    vertex_signed = dict(_letters(vertex))
+    for neighbor in neighbors:
+        neighbor_signed = dict(_letters(neighbor))
+        flipped = [letter for letter in vertex_signed if neighbor_signed[letter] != vertex_signed[letter]]
+        assert len(flipped) == 1, f"{neighbor} is not one flip away from {vertex}"
+
+
+def test_the_two_triangles_are_the_equatorial_ring_split_in_half():
+    """The Hexagram's two triangles: a pole's own three neighbours, plus the
+    antipode's own three neighbours, are together exactly the six vertices that
+    are NEITHER pole — the equatorial ring a body diagonal's silhouette hexagon
+    is drawn from, split into the two triangles the builder draws."""
+    pole, antipode = "+x+y+z", "-x-y-z"
+    up = set(vertex_neighbors(pole))
+    down = set(vertex_neighbors(antipode))
+    assert up.isdisjoint(down)
+    ring = set(cube_tokens(3)) - {pole, antipode}
+    assert up | down == ring
+    assert {opposite_token(token) for token in up} == down
+
+
+@pytest.mark.parametrize("vertex", cube_tokens(3))
+def test_hidden_from_is_the_antipodes_own_seven_cells(vertex):
+    """26 - 7 = 19 visible — the Blindness law, pinned as a count and as a set."""
+    hidden = hidden_from(vertex)
+    assert len(hidden) == 7
+    assert len(set(hidden)) == 7
+    antipode = opposite_token(vertex)
+    assert antipode in hidden
+    antipode_letters = set(letter for letter, _ in _letters(antipode))
+    for token in hidden:
+        token_letters_signed = dict(_letters(token))
+        # Every hidden cell agrees with the antipode on every letter it carries.
+        assert set(token_letters_signed) <= antipode_letters
+        for letter, sign in token_letters_signed.items():
+            assert dict(_letters(antipode))[letter] == sign
+
+
+def test_hidden_from_and_visible_from_together_are_all_26_cells():
+    hidden = set(hidden_from("+x+y+z"))
+    all_cells = set(cube_tokens(1)) | set(cube_tokens(2)) | set(cube_tokens(3))
+    visible = all_cells - hidden
+    assert len(hidden) == 7
+    assert len(visible) == 19
+    assert "+x+y+z" in visible          # a vertex is never blind to itself
+
+
 # ---- The arms that get built from them --------------------------------------
 
 
@@ -235,7 +294,99 @@ def _letters(token):
 
 
 def _parts(node):
-    from preview3d.light.scene import Node
     root = Node(name="content")
     root.add(node)
     return collect_parts(root)
+
+
+# ---- The hexagram primitive (M3) ---------------------------------------------
+
+
+def test_hexagram_triangle_corners_are_the_true_cube_vertices():
+    """A triangle corner is a token's UN-normalised vector times half the cube
+    — same rule as a model's cells — never an approximation of it."""
+    node = build_primitive({"type": "hexagram", "diagonal": "+x+y+z", "size": 2.0})
+    parts = {p["path"]: p for p in _parts(node)}
+    assert set(parts) == {"hexagram", "hexagram/triangle:up", "hexagram/triangle:down"}
+    up = next(child for child in node.children if child.name == "triangle:up")
+    corners = {point for segment in up.segments for point in (segment.start, segment.end)}
+    expected = {tuple(component * 1.0 for component in token_vector(v)) for v in vertex_neighbors("+x+y+z")}
+    assert corners == expected
+
+
+def test_hexagram_requires_a_diagonal():
+    with pytest.raises(ValueError, match="diagonal"):
+        build_primitive({"type": "hexagram"})
+
+
+def test_hexagram_defaults_to_the_sacred_and_neutral_colours():
+    """Never invented per-scene: the builder's own defaults reuse two colours
+    shared/spec.json already declares (axisColors.sacred, neutral.joint)."""
+    from preview3d.axis_colors import SACRED
+    from preview3d.resources import load_shared_spec
+
+    node = build_primitive({"type": "hexagram", "diagonal": "+x+y+z"})
+    up = next(child for child in node.children if child.name == "triangle:up")
+    down = next(child for child in node.children if child.name == "triangle:down")
+    assert up.segments[0].color == SACRED
+    assert down.segments[0].color == load_shared_spec()["neutral"]["joint"]
+
+
+def test_an_axis_stops_bead_is_the_same_node_as_its_labels():
+    """A bead-bearing stop must be ONE addressable part (a `part.position` track
+    slides the whole thing) — never a separate 'bead' child the two renderers
+    could disagree about having."""
+    node = build_axes({"arms": [{
+        "axis": "+x", "stops": [{"name": "luminous", "anchor": [0.5, 0, 0], "labels": {"canon": "x"}}],
+    }]})
+    arm = next(child for child in node.children if child.name == "arm:+x")
+    stop = next(child for child in arm.children if child.name == "luminous")
+    assert stop.faces, "an axis stop must carry its own bead geometry"
+    assert stop.position == pytest.approx((0.5, 0.0, 0.0))
+    assert [child.name for child in stop.children] == ["label:canon"]
+
+
+def test_a_cell_stops_position_carries_its_anchor_without_a_bead():
+    """A cell's own marker already has a body sphere; its stops stay text-only,
+    positioned the same way (Node.position, not a per-label offset)."""
+    from preview3d.light.primitives import build_marker
+
+    node = build_marker({
+        "position": [1.0, 2.0, 3.0],
+        "stops": [{"name": "luminous", "anchor": [0, 0.1, 0], "labels": {"canon": "x"}}],
+    })
+    stop = next(child for child in node.children if child.name == "luminous")
+    assert not stop.faces, "a cell's stop must stay text-only — the seat itself is the bead"
+    assert stop.position == pytest.approx((0.0, 0.1, 0.0))
+
+
+# ---- Near-culling (M3) --------------------------------------------------------
+
+
+def _straddling_camera() -> Camera:
+    """A camera close enough that a unit-ish face straddles its own near plane
+    — the exact situation the Blindness view's first-person dolly creates."""
+    return Camera(target=(0.0, 0.0, 0.0), distance=0.3, azimuth=0.0, elevation=0.0,
+                  projection="perspective", aspect=1.0)
+
+
+def test_a_face_straddling_the_near_plane_is_culled_whole():
+    """Before the guard, a face with one vertex behind the eye projected to a
+    mirrored, garbled polygon rather than vanishing — the defect PLAN.md's
+    'inside-the-scene mode with near-culling' exists to close."""
+    camera = _straddling_camera()
+    # A face spanning from just in front of the eye to well behind it.
+    points = [(-0.5, -0.5, 0.0), (0.5, -0.5, 0.0), (0.5, 0.5, 1.0), (-0.5, 0.5, 1.0)]
+    assert _face_item(points, camera, 600, 600, "#FFFFFF", 1.0, camera.position) is None
+
+
+def test_a_face_entirely_in_front_still_draws():
+    """The guard must not cull ordinary, comfortably-framed geometry."""
+    camera = Camera(target=(0.0, 0.0, 0.0), distance=4.0, azimuth=0.0, elevation=0.0, aspect=1.0)
+    points = [(-0.5, -0.5, 0.0), (0.5, -0.5, 0.0), (0.5, 0.5, 0.0), (-0.5, 0.5, 0.0)]
+    item = _face_item(points, camera, 600, 600, "#FFFFFF", 1.0, camera.position)
+    assert item is not None
+
+
+def test_near_cull_threshold_is_a_small_positive_depth():
+    assert 0 < NEAR_CULL < 0.01

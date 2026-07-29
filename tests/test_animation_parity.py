@@ -25,8 +25,9 @@ from PySide6.QtWidgets import QApplication
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from preview3d import Preview3DLightWidget, Preview3DWidget, load_shared_scenes, load_shared_spec  # noqa: E402
-from preview3d.light.animation import EASINGS, Timeline, ease  # noqa: E402
+from preview3d import Preview3DLightWidget, Preview3DWidget, build_cube_model, load_shared_scenes, load_shared_spec  # noqa: E402
+from preview3d.directions import hidden_from, token_letters  # noqa: E402
+from preview3d.light.animation import EASINGS, Timeline, ease, sample_track  # noqa: E402
 
 LOAD_TIMEOUT_MS = 20_000
 SETTLE_MS = 400
@@ -36,6 +37,7 @@ INSTANTS = (0.0, 0.5, 1.0)
 
 SCENES = {scene["name"]: scene for scene in load_shared_scenes()}
 SPEC = load_shared_spec()
+MODEL = build_cube_model()
 
 # Scenes that do not ship their own content play on whatever is loaded.
 DEFAULT_CONTENT = {"type": "cube", "colors": "poles"}
@@ -140,14 +142,24 @@ def _angle_gap(a: float, b: float) -> float:
 def _load(app, web, light, scene: dict) -> None:
     content = scene.get("content", DEFAULT_CONTENT)
     for widget in (web, light):
-        widget.show_scene(content)
+        # `content.type == "model"` is a HOST CONVENTION (SCENES.md): the scene
+        # was written against the demo MODEL's seats, not a bare primitive —
+        # Blindness and Five Stations need the 27-seat model, which a hand
+        # written primitive spec would just be duplicating (root Rule 5).
+        if content.get("type") == "model":
+            widget.show_model(MODEL, content.get("view"))
+        else:
+            widget.show_scene(content)
         # A scene without a projection track leaves the projection alone — which
         # is correct, and means the web widget (one instance for the whole
         # module) would otherwise carry the hexagon scene's orthographic switch
         # into the next scene while the LIGHT widget starts fresh.
         widget.set_projection("perspective")
         widget.set_animation(scene)
-    _settle(app)
+    # Building the 27-seat model in the web page takes longer than a bare
+    # primitive spec — the plain SETTLE_MS is enough for the LIGHT widget
+    # (synchronous) but not reliably for the page.
+    _settle(app, SETTLE_MS if content.get("type") != "model" else 1500)
 
 
 def _part_state(parts: list[dict]) -> dict:
@@ -180,6 +192,47 @@ def test_easing_curves_agree_with_the_web_core(app, web):
         assert from_js == pytest.approx(from_python, abs=1e-9), f"easing {curve!r} differs"
 
 
+def test_vector_channel_interpolates_component_wise():
+    """`part.position` is the highest-risk NEW drift point this milestone adds:
+    a list of numbers must lerp component-wise like a lone number, not step
+    like a name or a flag."""
+    timeline = Timeline({"name": "slide", "duration": 1, "tracks": [
+        {"channel": "part.position", "path": "a", "keys": [
+            {"t": 0, "value": [0.0, 10.0, -4.0]}, {"t": 1, "value": [2.0, 0.0, 6.0]},
+        ]},
+    ]})
+    assert timeline.sample(0.5)[0]["value"] == pytest.approx([1.0, 5.0, 1.0])
+    assert timeline.sample(0.0)[0]["value"] == pytest.approx([0.0, 10.0, -4.0])
+    assert timeline.sample(1.0)[0]["value"] == pytest.approx([2.0, 0.0, 6.0])
+
+
+def test_mismatched_vector_lengths_step_rather_than_interpolate():
+    """A shape mismatch cannot be lerped; stepping is the same fallback a name
+    or a flag gets, not a crash."""
+    timeline = Timeline({"name": "bad-shape", "duration": 1, "tracks": [
+        {"channel": "part.position", "path": "a", "keys": [
+            {"t": 0, "value": [0.0, 0.0]}, {"t": 1, "value": [1.0, 1.0, 1.0]},
+        ]},
+    ]})
+    assert timeline.sample(0.5)[0]["value"] == [0.0, 0.0]
+
+
+def test_vector_interpolation_agrees_with_the_web_core(app, web):
+    """The two easing implementations are pinned elsewhere; this pins the OTHER
+    hand-written half of sampleTrack — the branch that decides a value lerps
+    versus steps, extended this milestone to cover vectors."""
+    track = {"channel": "part.position", "path": "a", "keys": [
+        {"t": 0, "value": [0.0, 10.0, -4.0], "ease": "ease-in-out"},
+        {"t": 1, "value": [2.0, 0.0, 6.0]},
+    ]}
+    samples = [0.0, 0.25, 0.5, 0.75, 1.0]
+    expression = f"[{','.join(f'Preview3D.sampleTrack({json.dumps(track)},{t})' for t in samples)}]"
+    from_js = _web_evaluate(app, web, expression)
+    from_python = [sample_track(track, t) for t in samples]
+    for js_value, python_value in zip(from_js, from_python):
+        assert js_value == pytest.approx(python_value, abs=1e-9)
+
+
 def test_both_read_the_shared_animation_spec(app, web):
     """Neither renderer may carry its own copy of fps, speeds or the channels."""
     shared = SPEC["animation"]
@@ -210,7 +263,10 @@ def test_same_camera_at_key_instants(app, web, light, name):
         assert light_state["distance"] == pytest.approx(web_state["distance"], rel=0.15), where
 
 
-@pytest.mark.parametrize("name", ["xray", "legend"])
+@pytest.mark.parametrize("name", [
+    "xray", "legend", "hexagram_offices", "hexagram_being",
+    "blindness_christic", "blindness_diabolic", "five_stations",
+])
 def test_same_part_state_at_key_instants(app, web, light, name):
     """The scenes that drive parts rather than only the camera."""
     scene = SCENES[name]
@@ -280,6 +336,67 @@ def test_instant_mode_matches_the_end_of_the_flight(app, web, light):
     assert light_jump["projection"] == "orthographic"
     assert _angle_gap(light_jump["azimuth"], 45.0) < ANGLE_TOLERANCE
     assert light_jump["elevation"] == pytest.approx(35.264, abs=ANGLE_TOLERANCE)
+
+
+@pytest.mark.parametrize("name", ["blindness_christic", "blindness_diabolic"])
+def test_the_blindness_resolves_to_the_centre_at_the_end(app, web, light, name):
+    """jump_to_end() must land on the 'Centre' state PLAN.md describes — all 26
+    cells relit, standard framing — not stuck mid-blindness. That is also what
+    INSTANT mode and a reduced-motion viewer both see."""
+    scene = SCENES[name]
+    _load(app, web, light, scene)
+
+    web.jump_to_end()
+    light.jump_to_end()
+    _settle(app)
+
+    web_parts = _part_state(_await_callback(app, web.list_parts))
+    light_parts = _part_state(light.list_parts())
+    assert light_parts == web_parts
+
+    hidden = hidden_from("+x+y+z" if name == "blindness_christic" else "-x-y-z")
+    kinds = {1: "faces", 2: "edges", 3: "vertices"}
+    for token in hidden:
+        path = f"model/cells/{kinds[len(token_letters(token))]}/cell:{token}"
+        assert light_parts[path] == (True, 1.0), f"{path} is not relit at the end"
+
+    web_state = _await_callback(app, web.animation_state)
+    light_state = light.animation_state()
+    assert light_state["playing"] is False and web_state["playing"] is False
+    assert light_state["progress"] == pytest.approx(1.0)
+
+
+def test_the_five_stations_ends_with_every_bead_lit():
+    """The shipped instant-mode target: no bead is left invisible or mid-flight
+    after jump_to_end()."""
+    timeline = Timeline(SCENES["five_stations"])
+    timeline.jump_to_end()
+    opacities = {
+        entry["path"]: entry["value"] for entry in timeline.values() if entry["channel"] == "part.opacity"
+    }
+    for end in ("+x+y+z", "-x-y-z"):
+        for stop in ("luminous", "fallen"):
+            path = f"model/axes/sacred/axis:+x+y+z/arm:{end}/{stop}"
+            assert opacities[path] == pytest.approx(1.0), f"{path} is not fully lit at the end"
+    assert opacities["model/axes/sacred/axis:+x+y+z"] == pytest.approx(1.0)
+    assert opacities["model/cells/centre"] == pytest.approx(1.0)
+    assert opacities["model/glass"] == pytest.approx(0.0), "the cube must have faded away by the end"
+
+
+def test_shipped_five_stations_matches_the_generator():
+    """The shipped 'five_stations' scene is ONE baked instance of
+    build_five_stations_scene(build_cube_model(), '+x+y+z') — if the generator's
+    formula ever changes (a radial factor, a tier length), this baked JSON must
+    not go quietly stale (root CLAUDE.md Rule #25 spirit: a drift here is a
+    silent lie about what the shipped scene actually plays)."""
+    from preview3d.cinematics import build_five_stations_scene
+    from preview3d.cube_model import build_cube_model
+
+    generated = build_five_stations_scene(build_cube_model(), "+x+y+z")
+    shipped = SCENES["five_stations"]
+    assert shipped["duration"] == generated["duration"]
+    assert shipped["content"] == generated["content"]
+    assert shipped["tracks"] == pytest.approx(generated["tracks"])
 
 
 def test_transport_without_a_scene_is_inert(light):

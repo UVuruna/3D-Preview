@@ -34,7 +34,9 @@ sys.path.insert(0, str(ROOT))
 
 from preview3d import Preview3DLightWidget, Preview3DWidget  # noqa: E402
 from preview3d import axis_colors, model_scene, orientations  # noqa: E402
+from preview3d.cinematics import build_five_stations_scene  # noqa: E402
 from preview3d.cube_model import build_cube_model  # noqa: E402
+from preview3d.directions import cube_tokens, hidden_from, vertex_neighbors  # noqa: E402
 
 LOAD_TIMEOUT_MS = 20_000
 SETTLE_MS = 500
@@ -47,12 +49,17 @@ import { buildCubeModel } from './src/cubemodel.js';
 import { buildSpec } from './src/modelscene.js';
 import { deriveAll } from './src/axiscolors.js';
 import { orientationAxes, orientationIds } from './src/orientations.js';
+import { cubeTokens, hiddenFrom, vertexNeighbors } from './src/directions.js';
+import { buildFiveStationsScene } from './src/cinematics.js';
 const model = buildCubeModel();
 console.log(JSON.stringify({
     palette: deriveAll(),
     model,
     spec: buildSpec(model),
     orientations: Object.fromEntries(orientationIds().map((id) => [id, orientationAxes(id)])),
+    vertexNeighbors: Object.fromEntries(cubeTokens(3).map((v) => [v, vertexNeighbors(v)])),
+    hiddenFrom: Object.fromEntries(cubeTokens(3).map((v) => [v, hiddenFrom(v)])),
+    fiveStations: buildFiveStationsScene(model, '+x+y+z'),
 }));
 """
 
@@ -108,10 +115,15 @@ def python_side():
             identifier: [list(axis) for axis in orientations.orientation_axes(identifier)]
             for identifier in orientations.orientation_ids()
         },
+        "vertexNeighbors": {vertex: vertex_neighbors(vertex) for vertex in cube_tokens(3)},
+        "hiddenFrom": {vertex: hidden_from(vertex) for vertex in cube_tokens(3)},
+        "fiveStations": build_five_stations_scene(model, "+x+y+z"),
     }
 
 
-@pytest.mark.parametrize("part", ["palette", "model", "spec", "orientations"])
+@pytest.mark.parametrize("part", [
+    "palette", "model", "spec", "orientations", "vertexNeighbors", "hiddenFrom", "fiveStations",
+])
 def test_the_two_languages_produce_the_same_data(javascript, python_side, part):
     """Not "close enough" — identical. Every number here is derived by a stated
     rule, so any difference at all is one implementation reading the rule
