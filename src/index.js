@@ -19,8 +19,10 @@ export { Timeline, ANIMATION_DEFAULTS, CHANNELS, NO_ANIMATION, ease, sampleTrack
 // Exported because a consumer builds and validates its own model (MODELS.md).
 export {
     AXIS_TIERS, LETTERS, TIER_ORDER, canonicalToken, cubeAxes, cubeTokens,
-    oppositeToken, parseDirection, tierOf, tokenOf, tokenVector,
+    hiddenFrom, oppositeToken, parseDirection, tierOf, tokenOf, tokenVector,
+    vertexNeighbors,
 } from './directions.js';
+export { buildFiveStationsScene } from './cinematics.js';
 export { SACRED, blend, colorFor, deriveAll, distance, mix, verifyPalette } from './axiscolors.js';
 export { FACE_ORDER, orientationAxes, orientationIds, snapAngles, stepOrientation } from './orientations.js';
 export { TYPES as MODEL_TYPES, validate as validateModel } from './model.js';
