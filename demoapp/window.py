@@ -7,6 +7,7 @@ Preview3DWidget, and the camera readout is one signal connection.
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QComboBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -23,12 +24,13 @@ from preview3d import (
     NO_ANIMATION,
     Preview3DLightWidget,
     Preview3DWidget,
+    build_five_stations_scene,
     load_shared_scenes,
     load_shared_spec,
 )
 
 from .flow_layout import FlowLayout, flow_size_policy
-from .model_panel import ModelPanel
+from .model_panel import DEMO_MODEL, ModelPanel
 from .parts_panel import PartsPanel
 from .theme import THEME
 
@@ -145,6 +147,12 @@ class DemoWindow(QWidget):
         self._animation = None       # likewise — the loaded scene descriptor
         self._playing = False
         self._syncing_scrub = False  # tells the slider's own signal from a report
+        # True while a scene's own "content" is being shown as a SIDE EFFECT of
+        # loading that scene (rather than a direct MODEL button click) — without
+        # it, showing the model this way would trigger _on_model_shown()'s own
+        # "a hand-picked view invalidates whatever scene was loaded" rule and
+        # immediately clear the very animation being loaded.
+        self._suspend_animation_clear = False
 
         self.viewer.camera_changed.connect(self._on_camera_changed)
         self.viewer.animation_changed.connect(self._on_animation_changed)
@@ -346,6 +354,28 @@ class DemoWindow(QWidget):
         self._animation_readout.setObjectName("Readout")
         layout.addWidget(self._animation_readout)
 
+        # The Five Stations "generalize control" (PLAN.md): the shipped scene
+        # is ONE baked instance of build_five_stations_scene(); this regenerates
+        # the identical choreography for any of the model's 13 axes on demand,
+        # rather than shipping 13 near-identical descriptors (root Rule 19).
+        generalize = QHBoxLayout()
+        generalize.setSpacing(THEME["space_s"])
+        self._axis_picker = QComboBox()
+        for axis in DEMO_MODEL["axes"]:
+            self._axis_picker.addItem(axis["name"], axis["id"])
+        generalize_button = QPushButton("Generalize")
+        generalize_button.setObjectName("Compact")
+        generalize_button.setToolTip("Play the Five Stations on the chosen axis instead")
+        generalize_button.clicked.connect(self._play_generalized_five_stations)
+        generalize.addWidget(self._axis_picker, stretch=1)
+        generalize.addWidget(generalize_button)
+        layout.addLayout(generalize)
+
+    def _play_generalized_five_stations(self) -> None:
+        axis_id = self._axis_picker.currentData()
+        self._play_animation(build_five_stations_scene(DEMO_MODEL, axis_id))
+        self.viewer.setFocus()
+
     def _toggle_row(self, layout, entries, columns, on_click) -> QButtonGroup:
         group = QButtonGroup(self)
         grid = QGridLayout()
@@ -420,7 +450,13 @@ class DemoWindow(QWidget):
         self._apply_background()
         # The model re-shows itself on the new widget if it was the content;
         # otherwise it just unticks, and the primitive spec is replayed instead.
-        self.model.set_viewer(self.viewer)
+        # Suspended the same way _play_animation() is: replaying the model here
+        # must not fire _on_model_shown()'s own "clear the loaded scene" rule.
+        self._suspend_animation_clear = True
+        try:
+            self.model.set_viewer(self.viewer)
+        finally:
+            self._suspend_animation_clear = False
         if self._spec is not None:
             self.viewer.show_scene(self._spec)
         # Carry the scene across the swap — comparing the two renderers on the
@@ -457,7 +493,8 @@ class DemoWindow(QWidget):
     def _on_model_shown(self) -> None:
         self._spec = None
         self._clear_checks(self._scene_buttons)
-        self._clear_animation()
+        if not self._suspend_animation_clear:
+            self._clear_animation()
 
     # ---- Animation ---------------------------------------------------------
 
@@ -465,10 +502,22 @@ class DemoWindow(QWidget):
         content = descriptor.get("content")
         if content is not None:
             # The scene ships the content it was written for — a host-level
-            # convention, not a timeline channel (see SCENES.md).
-            self._spec = content
-            self.viewer.show_scene(content)
+            # convention, not a timeline channel (see SCENES.md). `type:
+            # "model"` names the demo MODEL and one of its views rather than a
+            # primitive spec (Blindness and Five Stations need the 27-seat
+            # model; Hexagram X-ray's cast is a handful of bespoke primitives).
             self._clear_checks(self._scene_buttons)
+            if content.get("type") == "model":
+                self._spec = None
+                self._suspend_animation_clear = True
+                try:
+                    self.model.show_model(content.get("view"))
+                finally:
+                    self._suspend_animation_clear = False
+            else:
+                self._spec = content
+                self.viewer.show_scene(content)
+                self.model.clear()
         self._animation = descriptor
         self._sync_toggle(self._animation_buttons, descriptor["name"])
         self.viewer.set_animation(descriptor)

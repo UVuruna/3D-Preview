@@ -76,7 +76,7 @@
        the panel edge instead of wrapping. */
     .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-s); }
     .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-s); }
-    button, label.file {
+    button, label.file, select {
         appearance: none;
         border: 1px solid var(--border);
         background: var(--surface-2);
@@ -88,7 +88,8 @@
         text-align: center;
         transition: background 160ms ease-out;
     }
-    button:hover, label.file:hover { background: var(--surface-hover); }
+    select { flex: 1; min-width: 0; text-align: left; }
+    button:hover, label.file:hover, select:hover { background: var(--surface-hover); }
     button.on { background: var(--accent-strong); border-color: transparent; }
     button.on:hover { background: var(--accent); }
     button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25); }
@@ -156,6 +157,10 @@
                title="Scrub through the scene" aria-label="Scrub through the scene">
         <div class="grid3" id="speeds"></div>
         <div id="playback"></div>
+        <div class="row">
+            <select id="generalize-axis" title="Play the Five Stations on this axis instead"></select>
+            <button id="btn-generalize">Generalize</button>
+        </div>
         <h2>VIEW</h2>
         <div class="grid4" id="views"></div>
         <h2>PROJECTION</h2>
@@ -395,16 +400,40 @@
 
     function playAnimation(scene) {
         // The scene ships the content it was written for — a host-level
-        // convention, not a timeline channel (see SCENES.md).
+        // convention, not a timeline channel (see SCENES.md). `type: "model"`
+        // names the demo MODEL and one of its views rather than a primitive
+        // spec (Blindness and Five Stations need the 27-seat model; Hexagram
+        // X-ray's cast is a handful of bespoke primitives).
         if (scene.content) {
             mark(sceneButtons, null);
-            clearModel();
-            viewer.show(scene.content);
+            if (scene.content.type === 'model') {
+                showModelView(scene.content.view ?? MODEL.views[0].name);
+            } else {
+                clearModel();
+                viewer.show(scene.content);
+            }
         }
         mark(animationButtons, scene.name);
         viewer.setAnimation(scene);
         viewer.playAnimation();
     }
+
+    // ---- The Five Stations "generalize control" (PLAN.md) -----------------
+    // The shipped scene is ONE baked instance of Preview3D.buildFiveStationsScene();
+    // this regenerates the identical choreography for any of the model's 13
+    // axes on demand, rather than shipping 13 near-identical descriptors
+    // (root Rule 19).
+    const axisPicker = document.getElementById('generalize-axis');
+    for (const axis of MODEL.axes) {
+        const option = document.createElement('option');
+        option.value = axis.id;
+        option.textContent = axis.name;
+        axisPicker.appendChild(option);
+    }
+    document.getElementById('btn-generalize').onclick = () => {
+        playAnimation(Preview3D.buildFiveStationsScene(MODEL, axisPicker.value));
+        focusStage();
+    };
 
     function clearAnimation() {
         // New content need not contain the parts a loaded scene drives, so
