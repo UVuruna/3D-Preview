@@ -11,13 +11,33 @@ Builds the LIGHT renderer's scene from the **same JSON specs** the web core take
 ### Uses
 - [Light Scene](scene.md) — the nodes it produces
 - [Preview3d Package (folder)](../___preview3d.md) → `resources.py` — the palette from `shared/spec.json`
+- [Directions](../directions.md) — `vertex_neighbors`/`hidden_from` for the hexagram overlay
 
 ### Used by
 - [Light Widget](view.md) — `show_scene` calls `build_primitive`
 
 ## Specs
 
-Identical to the web core's: `axes` (arm groups with `shaft`, `tip`, an optional `labels` switch group and any number of radial `stops`; an arm's direction is a token or a vector; its colour defaults to its pole hue, which only a one-letter token has), `cube` (`colors: "poles"` or six colours build six named `face:*` nodes; otherwise one `body`; optional `edges`), `group` (an empty node) and `marker` (a seat: a `body` sphere plus its stops). Universal fields `name`, `position`, `scale` and `children` apply to every spec.
+Identical to the web core's: `axes` (arm groups with `shaft`, `tip`, an optional `labels` switch group and any number of radial `stops`; an arm's direction is a token or a vector; its colour defaults to its pole hue, which only a one-letter token has), `cube` (`colors: "poles"` or six colours build six named `face:*` nodes; otherwise one `body`; optional `edges`), `group` (an empty node), `marker` (a seat: a `body` sphere plus its stops) and `hexagram` (the two triangles a cube's silhouette splits into down a body diagonal — see below). Universal fields `name`, `position`, `scale` and `children` apply to every spec.
+
+## `hexagram` — The Hexagram X-ray Overlay
+
+The Scene 1 cinematic ([SCENES.md](../../SCENES.md)) needs a genuinely new shape — the Star-of-David triangles a cube's silhouette hexagon splits into, down a body diagonal — computed from the diagonal (root Rule #19), never per-scene coordinates:
+
+```
+pole   ← canonical_token(diagonal)
+up     ← the THREE vertices one flip away from pole      (vertex_neighbors)
+down   ← the three vertices one flip away from opposite_token(pole)
+corner ← token_vector(vertex) × (size / 2)                — the TRUE cube vertex
+```
+
+Part tree: `hexagram/triangle:up`, `hexagram/triangle:down` — one `Node` each, holding all three `Segment`s, so a single `part.strokeProgress` on the path draws (or un-draws) the whole triangle at once (see [Light Renderer](renderer.md)). Colours default to `axisColors.sacred` (up) and `neutral.joint` (down) rather than inventing new hues; a scene may override both.
+
+## Beads on an axis stop
+
+`build_stop(stop, color, height, bead=False)` — called with `bead=True` only from `build_axes`. A bead-bearing stop carries its own sphere `Face`s directly on the SAME `Node` that holds its label children (never a separate child), so the part tree matches the web core's, where the equivalent stop is a `Mesh` that also has children. Unlike a cell, an axis stop has no marker of its own, and the Five Stations scene's "beads slide to their stations" needs something visible to slide — `part.position` on the stop's own path is what moves it. Radius is `height × modelScene.beadRadiusFactor`.
+
+**A stop's own anchor now lives on `Node.position`, not on the label's anchor** — the label anchors at the local origin instead. This is what lets `part.position` address a stop directly; it changes nothing about where anything renders, because the two compose identically (`here_offset = parent + node.position`, then the label's own zero anchor adds nothing further).
 
 ## Tessellation
 

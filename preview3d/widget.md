@@ -38,7 +38,7 @@ The `QObject` JS calls into, one slot per message the page can send. `reportCame
 - `set_model_view(name)`, `model_views(callback)`
 
 #### Parts
-`list_parts(callback)` (asynchronous), `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` — see [Making Models](../MODELS.md).
+`list_parts(callback)` (asynchronous), `set_part_visible`, `set_part_opacity`, `set_part_position`, `set_part_stroke`, `show_only`, `remove_part` — see [Making Models](../MODELS.md). The last two are M3's additions — see [Animation Scenes](../SCENES.md#channels) for `part.position` / `part.strokeProgress`.
 
 #### Camera
 `set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)` (relative), `set_orbit(az, el)` (absolute), `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`, `snap_to(direction)` — the last one takes a direction token or a vector, because the seven presets cannot express the four body diagonals a cube is read along.

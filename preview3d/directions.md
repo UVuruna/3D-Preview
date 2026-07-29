@@ -54,6 +54,14 @@ a token is.
 - `cube_axes(letters)` — all 3 / 6 / 4 axes as `(positive end, negative end)`,
   each line named after the end whose first letter is written positive
 - `token_of(vector)` — the token for a direction that IS one of the cube's 26
+- `vertex_neighbors(vertex)` — the three vertices an edge away: flip exactly
+  one of the vertex's own letters, keep the other two. This is the split the
+  Hexagram X-ray's two triangles rest on — a pole's own three neighbours are
+  one triangle, the antipode's own three the other (M3, [SCENES.md](../SCENES.md))
+- `hidden_from(vertex)` — the seven cells hidden behind that vertex's own
+  view: the ANTIPODE, its three adjacent edges and its three adjacent faces —
+  every cell sharing the antipode's sign combination. 26 − 7 = 19 visible,
+  the Blindness view's own law (M3)
 
 ## Design Decisions
 

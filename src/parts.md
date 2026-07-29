@@ -32,6 +32,8 @@ Unnamed nodes fall back to `Type#index` (`Mesh#3`), which is why naming is the w
 - `setPartVisible(root, path, visible)`: hiding a group hides its whole subtree
 - `showOnly(root, groupPath, childName)`: show one child, hide its siblings — a switch group in one call
 - `setPartOpacity(root, path, alpha)`: sets the part's OWN opacity, which multiplies down its subtree
+- `setPartPosition(root, path, position)`: an absolute `[x, y, z]` — every `Object3D` already has this field, so unlike opacity there is no "effective" value to recompute
+- `setPartStroke(root, path, progress)`: 0..1 of a line part's own length, drawn from its start toward its end. Only meaningful on a part built from segments (the hexagram's triangles); it reads `userData.preview3dSegments` — the FULL, un-stroked endpoints recorded at build time — and rewrites the geometry's position buffer from them each call, mirroring `scene.py`'s `Node.stroke`
 - `removePart(root, path)`: detach and dispose geometry and materials; irreversible
 
 ## Design Decisions

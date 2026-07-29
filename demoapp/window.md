@@ -47,7 +47,8 @@ The scenes deliberately omit arm colours and pass `colors: "poles"` for the cube
 - `set_renderer(key)`: swap the widget in the stage and replay the current content, animation, background and part panel onto it — including whether it was playing — so the two renderers can be compared on the very same scene mid-flight
 - `_with_focus(action, *args)`: run a control's action, then return keyboard focus to the viewer
 - `_load_model()`: file dialog → `load_model()`; clears the scene selection, since what is shown is no longer a demo scene
-- `_play_animation(descriptor)`: load the scene's own content if it declares one, then `set_animation` + `play_animation`
+- `_play_animation(descriptor)`: load the scene's own content if it declares one, then `set_animation` + `play_animation`. `content.type == "model"` (a HOST CONVENTION, not a timeline channel — [Animation Scenes](../SCENES.md#content)) shows the demo MODEL and one of its views through `self.model.show_model(...)` instead of a bare primitive spec — Blindness and Five Stations need the 27-seat model
+- `_play_generalized_five_stations()`: the Five Stations "generalize control" (PLAN.md) — regenerates `build_five_stations_scene(DEMO_MODEL, axis_id)` for whichever axis the combo box selects and plays it through the same `_play_animation` path, rather than shipping 13 near-identical scenes (root Rule #19)
 - `_cycle_background()` / `_apply_background()`: step through `BACKGROUNDS`, keeping the button label in sync
 - `_on_camera_changed(state)` / `_on_animation_changed(state)`: the readouts, the toggle states, and the parts reload — see below
 
@@ -86,3 +87,4 @@ The scrub slider is both an input and a readout, so a guard flag distinguishes t
 - **Picking content clears the animation selection.** The viewer itself drops the scene when new content is shown (a scene is written against specific parts), so the panel only has to un-check the button and let the report that follows reset the transport.
 - **Every transport button calls `self.viewer.<method>()` at click time**, never a bound method captured at build time — the widget under it is replaced whole when the renderer is switched.
 - **A model is content like any other.** Showing one clears the primitive spec the window would otherwise replay on a renderer swap, and the [Model Panel](model_panel.md) re-shows the model instead — `on_activate` is the one line that keeps the two from both claiming the stage.
+- **`_suspend_animation_clear` breaks a real ordering trap.** `ModelPanel.show_model()` always calls `on_activate` (`_on_model_shown`), which clears the loaded animation — correct when a MODEL button is clicked by hand, wrong when the model is being shown AS the content of the very scene about to play (or being replayed across a renderer swap). The flag suppresses that one clear for exactly those two call sites, set and reset around a single call each, never left standing.

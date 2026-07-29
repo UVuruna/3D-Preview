@@ -32,6 +32,7 @@ These seven exist twice, once per language, for the reason the timeline does: a 
 | `modelscene.js` | model data to a scene spec | [Model Scene](../preview3d/model_scene.md) |
 | `cubemodel.js` | the thirteen-axis cube, computed | [Cube Model](../preview3d/cube_model.md) |
 | `switcher.js` | register and reading as part operations | [Switcher](../preview3d/switcher.md) |
+| `cinematics.js` | cinematic scene GENERATORS — the Five Stations for any of the 13 axes | [Cinematics](../preview3d/cinematics.md) |
 
 ### `modelview.js` — The Viewer's Model Half
 Small module (~70 lines, documented here). Split out of `viewer.js` so the container stays a container (root Rule #20): `buildModelContent` validates a model and builds its content, `viewSettings` returns a view's opacities and camera direction, `orientationQuaternion` turns an orientation id into a rotation, and `checkRegister` / `requireModel` are the two refusals. Nothing in it reaches into a viewer — it takes what it needs and returns what it decided, mirroring [Light Model View](../preview3d/light/model_view.md).

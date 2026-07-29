@@ -55,13 +55,18 @@ value of a track at progress p:
 
         IF from.value AND to.value are both numbers:
             → from.value + (to.value − from.value) × ease(from.ease, local)
+        IF from.value AND to.value are both vectors of the SAME length:
+            → each component lerped the same way             # part.position
         OTHERWISE:
-            → from.value            # names, flags and choices STEP
+            → from.value            # names, flags and mismatched shapes STEP
 ```
+
+A **vector** is a fixed-length list of numbers — `part.position`'s `[x, y, z]`, the channel M3 added so a scene can slide a part (a bead to its station, a seat collapsing to the centre) rather than only fade or step it. It lerps component-wise by the identical rule a lone number follows; two vectors of different lengths cannot be lerped and step instead, the same fallback a name or a flag gets.
 
 ## Design Decisions
 
 - **`bool` is excluded from "is a number" explicitly.** In Python `bool` subclasses `int`, so without the guard a `part.visible` track would cross-fade through 0.5 here while stepping in JavaScript — two renderers disagreeing on a channel that looks correct in both sources. Pinned by `test_non_numeric_values_step_rather_than_interpolate`.
+- **Vector interpolation reuses the same eased fraction as a scalar's**, computed once per sample rather than per component — a `part.position` track costs the same one `ease()` call a `camera.azimuth` track does. Pinned cross-language by `test_vector_interpolation_agrees_with_the_web_core`.
 - **Rounding is half-up, not Python's default.** The built-in `round()` rounds halves to even; JavaScript's `Math.round` rounds them up. On an exact tie that would put the two renderers one frame apart.
 - **Validation happens at load**, naming the scene in the message, rather than failing silently mid-playback (root Rule #1).
 - **No Qt import anywhere in this module** — the LIGHT renderer keeps its geometry and its timeline testable headless; only `view.py` and `renderer.py` touch Qt.

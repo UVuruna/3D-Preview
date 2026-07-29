@@ -38,7 +38,7 @@ The 3D Preview container: owns the renderer, both cameras, orbit controls, studi
 - `exportGLB()`: current content as a binary glTF `Blob`
 
 #### Parts
-`listParts()`, `setPartVisible(path, visible)`, `setPartOpacity(path, alpha)`, `showOnly(groupPath, childName)`, `removePart(path)` — see [Parts](parts.md) and [Making Models](../MODELS.md).
+`listParts()`, `setPartVisible(path, visible)`, `setPartOpacity(path, alpha)`, `setPartPosition(path, position)`, `setPartStroke(path, progress)`, `showOnly(groupPath, childName)`, `removePart(path)` — see [Parts](parts.md) and [Making Models](../MODELS.md). The last two are M3's additions: an absolute position (the mirror of `Node.position` in the LIGHT renderer), and 0..1 of a line part's own length drawn from its start toward its end — the Hexagram X-ray triangles' "draw themselves" effect and the Five Stations beads' slide, both `part.position` / `part.strokeProgress` in [Animation Scenes](../SCENES.md).
 
 #### Camera
 - `setView(name)` / `stepView(±1)`: jump to or cycle the presets
@@ -104,7 +104,8 @@ The [Timeline](animation.md) resolves values; the viewer applies them, and that 
 ```
 EACH FRAME (and after every transport command):
     FOR EACH {channel, path, value} IN timeline.values():
-        camera.* → remember;  everything else → apply immediately
+        camera.* → remember;  everything else (including part.position,
+            part.strokeProgress) → apply immediately
     IF any camera channel appeared:
         place the camera absolutely from azimuth / elevation / dolly
 ```

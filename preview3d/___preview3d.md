@@ -40,6 +40,9 @@ The model the four owner views are views OVER. See [Cube Model](cube_model.md).
 ### `switcher.py` — Register and Reading
 Which vocabulary speaks, and which readings are lit. See [Switcher](switcher.md).
 
+### `cinematics.py` — Cinematic Scene Generators
+A master rule for a whole family of scenes — `build_five_stations_scene(model, axis_id)` computes the Five Stations descriptor for any of the model's 13 axes, rather than shipping 13 near-identical ones. See [Cinematics](cinematics.md).
+
 ### `light/` — The LIGHT Renderer
 QPainter software 3D, no browser engine. See [Light (subfolder)](light/___light.md).
 
@@ -55,7 +58,7 @@ QPainter software 3D, no browser engine. See [Light (subfolder)](light/___light.
 
 ## Design Decisions
 
-- **The model layer imports no Qt at all.** `model`, `model_scene`, `cube_model`, `directions`, `axis_colors`, `orientations`, `switcher`, `vectors` and `jsmath` are pure Python, so a consumer's exporter can build and validate a model from a script with no GUI — which is exactly what DOMY Watch's Character-Cube exporter does. Only the two widget layers touch PySide6.
+- **The model layer imports no Qt at all.** `model`, `model_scene`, `cube_model`, `directions`, `axis_colors`, `orientations`, `switcher`, `cinematics`, `vectors` and `jsmath` are pure Python, so a consumer's exporter can build and validate a model from a script with no GUI — which is exactly what DOMY Watch's Character-Cube exporter does. Only the two widget layers touch PySide6. (`cinematics.py` reaches into `light.camera.Camera` for one piece of pure trigonometry — confirmed Qt-free, and reused rather than re-derived.)
 - **The model layer exists twice, once per language**, for the same reason the timeline does: a website has no Python and a lean Qt app has no browser. `tests/test_model_parity.py` runs the two head to head and compares their OUTPUT exactly — the palette, the model, the scene spec and the 24 orientations — because the answer here is a value rather than a picture.
 - **The web wrapper only marshals** — specs as JSON, models as JSON, model files as base64 bytes. All of its rendering behaviour lives in the JS core.
 - **Both widgets present the same surface**, so a consumer changes one constructor call and nothing else. The single unavoidable difference — asynchronous `list_parts` on the web side — is absorbed by the LIGHT widget accepting a callback as well as returning the list.

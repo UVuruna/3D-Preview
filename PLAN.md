@@ -338,10 +338,42 @@ lands, the clock is a data drop, not an engine change.
   Not included, and proposed rather than assumed: the per-view **label
   density** toggle listed under §The Switcher's "plus per-view
   toggles".
-- **M3 — The cinematic scenes (ALL approved):** the timeline
-  driver, Hexagram X-ray (both variants), the Blindness (both
-  variants), the Five Stations; playback controls + INSTANT mode;
-  hover/click host callbacks.
+- **M3 — The cinematic scenes — DONE 2026-07-30.** All five approved
+  scenes shipped as data in `shared/scenes.json`: the Hexagram X-ray
+  (Offices + Being), the Blindness (Christic + Diabolic), the Five
+  Stations. Playback controls and INSTANT mode were already complete
+  from the M2 session (`set_animation`/`play_animation`/…/`jump_to_end`,
+  `tests/test_animation_parity.py`'s instant-mode pin) — this session
+  verified them, closed no gaps. Two GENERIC engine channels closed the
+  gap between what the storyboards needed and what M1/M2 had built:
+  `part.position` (a part slides — a bead to its station, a seat
+  collapsing into the centre) and `part.strokeProgress` (a line draws
+  itself, toward its own end) — both flat, both vector/scalar-lerped by
+  the SAME rule every other channel already used, never a hardcoded
+  per-scene branch. One new parametric primitive, `hexagram` (the two
+  triangles a cube's silhouette splits into down a body diagonal,
+  computed from the diagonal per root Rule 19), and one geometry
+  addition, `directions.hidden_from()` (the Blindness's 19-of-26 law,
+  computed from a vertex's own antipode). One correctness fix that only
+  the LIGHT renderer needed: near-plane culling, so the Blindness
+  view's first-person dolly does not garble geometry the software
+  painter was never asked to draw that close before (three.js already
+  clips there in hardware). The Five Stations "generalizes to any axis"
+  the extra-views spec promised via a GENERATOR
+  (`preview3d/cinematics.py` / `src/cinematics.js`,
+  `build_five_stations_scene(model, axis_id)`) rather than 13
+  hand-authored scenes — the shipped instance is pinned against the
+  generator's live output so the two cannot quietly drift.
+  **PLAN.md's original M3 line named "hover/click host callbacks" —
+  written BEFORE the owner's 2026-07-28 retraction in this file's own
+  CLAUDE.md** ("the previewer is a container… do not build raycast
+  picking for it"). The retraction wins: no picking was built, and
+  none is owed. **Not shipped, and correctly so:** the 24-Orientations
+  Clock (Extra View #4) stays DATA-BLOCKED on DOMY WORKPLAN Session
+  26's rotation↔hour rule — the engine capability it needs
+  (snap-to-orientation, stepped auto-advance) already exists from M2;
+  only the DATA is missing, so nothing here should manufacture a
+  placeholder for it.
 - **M4 — DOMY integration:** exporter in DOMY, Encyclopedia embed,
   tests on both sides.
 

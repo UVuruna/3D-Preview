@@ -63,16 +63,21 @@ value of a track at progress p:
 
         IF from.value AND to.value are both numbers:
             → from.value + (to.value − from.value) × ease(from.ease, local)
+        IF from.value AND to.value are both vectors of the SAME length:
+            → each component lerped the same way             # part.position
         OTHERWISE:
-            → from.value            # names, flags and choices STEP
+            → from.value            # names, flags and mismatched shapes STEP
 ```
 
 A key's easing governs the segment that **starts** at it, so the last key's easing is never used.
+
+A **vector** is a fixed-length array of numbers — `part.position`'s `[x, y, z]`, the channel M3 added so a scene can slide a part (a bead to its station, a seat collapsing to the centre) rather than only fade or step it. It lerps component-wise by the identical rule a lone number follows; two vectors of different lengths cannot be lerped and step instead, the same fallback a name or a flag gets.
 
 ## Design Decisions
 
 - **Validation happens at load, not during playback.** An unknown channel, a missing `path`, an empty key list or an unknown easing throws while the scene is being loaded — where the scene can be named in the message — instead of silently animating nothing halfway through (root Rule #1).
 - **Non-numeric values step automatically.** A projection name, a visibility flag and a switch-group child need no special case; "cannot be interpolated" and "should step" are the same set. The Python mirror needs one extra guard for this, because `bool` is an `int` there.
+- **Vector interpolation reuses the same eased fraction as a scalar's.** One `ease()` call per sample, whether the channel is a number or a `[x, y, z]`. Pinned cross-language by `test_vector_interpolation_agrees_with_the_web_core` in `tests/test_animation_parity.py`.
 - **Fixed timestep.** Wall time accumulates and is spent in whole 1/fps steps, so a scene evaluates at the same instants regardless of the host's frame rate — that is what makes both renderers agree and `stepFrame` mean something exact. `maxStep` caps the catch-up so a hidden tab does not fast-forward the scene on return.
 - **`t` is a fraction, not seconds.** Changing `duration` re-times a whole scene without touching a key.
 - **No end-of-scene callback.** A finished non-looping scene simply reports `playing: false` at `progress: 1`; a second mechanism would be one more thing to miss.

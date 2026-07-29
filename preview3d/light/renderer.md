@@ -26,14 +26,20 @@ Turns the scene into pixels: flatten the tree to world geometry, project it, sor
 
 ```
 collect draw items: for every face, line and label
-    project its points; drop anything entirely behind the eye
+    project its points; drop anything with ANY point behind or grazing the near plane
     face → shade from its normal, average depth
     label → pixel size = world height × EM ratio × viewport height / visible height at that depth
 sort all items by depth, farthest first
 paint in that order
 ```
 
+A node's `segments` also read its own `stroke` (0..1): below `1.0`, each segment is shortened toward its own start by that fraction before projection; at `0.0` it is skipped entirely. This is the whole implementation of a line "drawing itself" — no separate animation path, just a smaller segment handed to the same projector.
+
 Shading is flat Lambert from one key light plus an ambient share standing in for the web core's environment map. The normal is flipped toward the eye first, because faces here are effectively double-sided — a face seen from behind must still be lit.
+
+## Near-Culling
+
+`NEAR_CULL` — a face or line is dropped **whole** if any of its points projects at or behind the eye's own near plane, not only when ALL of them do. Three.js's WebGL pipeline clips at its camera's near plane in hardware; this software painter has no such stage, so before this guard a vertex just past the eye divided by a near-zero (or negative) depth and projected to its **mirror image** on screen rather than off it — a garbled polygon, not an absent one. That is exactly the situation the Blindness view's first-person dolly creates (the camera flies to inside the glass shell), which is why the guard exists now rather than earlier: nothing before M3 placed the camera anywhere near its own content.
 
 ## Design Decisions
 

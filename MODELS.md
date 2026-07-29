@@ -369,6 +369,13 @@ sits INSIDE the geometric end (0.72 of the arm) and its `fallen` stop PAST it
 Seats do not carry it — a seat IS a station — so their two readings simply sit
 above and below the marker.
 
+An axis stop also carries a small **bead** — its own sphere geometry, on the
+same part its labels sit on — because unlike a seat it has no marker of its
+own to be visible as. That is what the Five Stations animation slides with
+`part.position` ([Animation Scenes](SCENES.md#channels)): the bead is one
+addressable part, never a separate child, so the whole thing (sphere and
+labels together) moves as one.
+
 <a id="views"></a>
 
 ### Views — The Four Owner Models

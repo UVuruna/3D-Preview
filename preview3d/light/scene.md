@@ -19,11 +19,13 @@ The node tree the LIGHT renderer draws, and the part operations on it. The paths
 The three things a node can draw. `Face` is a flat convex polygon, `Segment` a stroked line, `Label` a billboard text anchor whose `height` is in world units. Coordinates are in the owning node's local space; the renderer applies the ancestor chain.
 
 ### Node
-`name`, `position`, `scale` (uniform), `visible`, `opacity`, the three drawable lists, and `children`. `drawable` is true when the node carries geometry, as opposed to being a pure group.
+`name`, `position`, `scale` (uniform), `visible`, `opacity`, `basis` (an optional rotation), `stroke`, the three drawable lists, and `children`. `drawable` is true when the node carries geometry, as opposed to being a pure group.
+
+`stroke` (default `1.0`) is how much of the node's own **segments** are drawn, from each one's start toward its end — a line "growing" into place. Only segments read it; a node's faces and labels are unaffected, so a group can carry both a stroke-drawn overlay and solid geometry without splitting. This is what the Hexagram X-ray's triangles "draw themselves" with (`part.strokeProgress` in [Animation Scenes](../../SCENES.md)).
 
 ## Functions
 
-`collect_parts`, `find_part`, `require_part`, `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` — mirroring `src/parts.js` name for name.
+`collect_parts`, `find_part`, `require_part`, `set_part_visible`, `set_part_opacity`, `set_part_position`, `set_part_stroke`, `show_only`, `remove_part` — mirroring `src/parts.js` name for name (`setPartPosition`, `setPartStroke` there).
 
 ## Design Decisions
 

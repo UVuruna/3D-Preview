@@ -10,6 +10,7 @@ Simple shapes COMPUTED from plain-JSON specs — the root Rule #19 workhorse of 
 
 ### Uses
 - [Source (folder)](___src.md) → `labels.js` — text sprites for arm labels
+- [Directions](../preview3d/directions.md) — `vertexNeighbors`/`hiddenFrom` for the hexagram overlay
 
 ### Used by
 - [Viewer](viewer.md) — `show(spec)` calls `buildPrimitive()`
@@ -117,6 +118,33 @@ Defaults in `MARKER_DEFAULTS`:
 | `stops` | none | as for an arm, above |
 
 Part tree: `marker/body` plus one group per stop. Its **position** comes from the universal `position` field, like every other primitive's.
+
+### `hexagram` — The Hexagram X-ray Overlay
+
+The two triangles a cube's silhouette splits into when seen down a body diagonal (Scene 1, [Animation Scenes](../SCENES.md)) — COMPUTED from the diagonal (root Rule #19), never per-scene coordinates.
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `diagonal` | *(required)* | a vertex direction token, e.g. `'+x+y+z'` |
+| `size` | `1` | edge length of the cube it is drawn against |
+| `upColor` | `axisColors.sacred` | the near pole's triangle |
+| `downColor` | `neutral.joint` | the far pole's triangle |
+| `lineWidth` | `hexagram.lineWidth` in `shared/spec.json` | stroke width |
+
+Part tree: `hexagram/triangle:up`, `hexagram/triangle:down` — each ONE `LineSegments` holding all three sides, so a single `part.strokeProgress` on the path draws (or un-draws) the whole triangle at once.
+
+```
+pole      ← canonicalToken(diagonal)
+triangle:up   ← the THREE vertices one flip away from pole (vertexNeighbors)
+triangle:down ← the three vertices one flip away from oppositeToken(pole)
+corner    ← tokenVector(vertex) × (size / 2)     — the TRUE cube vertex, never an approximation
+```
+
+`vertexNeighbors`/`hiddenFrom` live in [Directions](../preview3d/directions.md) — the same geometry the Blindness view's 19-of-26 rule reads.
+
+### Beads on an axis stop
+
+A `stops` entry built through `buildAxes` (never through `marker`) also gets a small sphere: unlike a cell, an axis has no marker of its own, and "Five beads slide to their stations" (the Five Stations scene) needs something visible to slide. The bead-bearing stop is a **Mesh that also holds label children** — never a separate "bead" child — so the part tree matches the LIGHT renderer's `Node`, which carries both its own faces and its children on one object. `part.position` on the stop's own path slides the whole thing; radius is `stopHeight × modelScene.beadRadiusFactor`.
 
 ## Adding a Primitive
 

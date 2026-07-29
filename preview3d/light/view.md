@@ -27,7 +27,9 @@
 - `animation_changed(dict)`: `{scene, label, playing, time, duration, progress, speed, frame, frames, loop}` — likewise.
 
 #### Methods
-The shared contract in full: `show_scene`, `show_axes`, `list_parts`, `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part`, `set_view`, `step_view`, `set_projection`, `orbit_by`, `set_orbit`, `pan_by`, `zoom_by`, `reset_view`, `snap_to`, `camera_state`, `set_background`, `set_grid`.
+The shared contract in full: `show_scene`, `show_axes`, `list_parts`, `set_part_visible`, `set_part_opacity`, `set_part_position`, `set_part_stroke`, `show_only`, `remove_part`, `set_view`, `step_view`, `set_projection`, `orbit_by`, `set_orbit`, `pan_by`, `zoom_by`, `reset_view`, `snap_to`, `camera_state`, `set_background`, `set_grid`.
+
+`set_part_position(path, position)` and `set_part_stroke(path, progress)` are M3's additions — a part's absolute position, and 0..1 of a line part's own length drawn from its start — both `part.position` / `part.strokeProgress` in [Animation Scenes](../../SCENES.md), and both mirrored in `viewer.js`'s `setPartPosition`/`setPartStroke`.
 
 Models and the Switcher, likewise on both: `show_model`, `set_model_view`, `model_views`, `set_switcher`, `switcher_state`, `set_orientation`, `step_orientation` — see [Making Models](../../MODELS.md#model).
 
