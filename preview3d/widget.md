@@ -27,19 +27,24 @@ The `QObject` JS calls into, one slot per message the page can send. `reportCame
 ### Preview3DWidget
 
 #### Signals
-- `camera_changed(dict)`: `{azimuth, elevation, distance, view, projection, grid, gridStep, contentVersion}` — degrees; emitted while the camera moves, rate-limited by the viewer. Watch `contentVersion` to know when newly loaded content is actually in place.
+- `camera_changed(dict)`: `{azimuth, elevation, distance, view, projection, grid, gridStep, background, contentVersion, orientation, modelView}` — degrees; emitted while the camera moves, rate-limited by the viewer. Watch `contentVersion` to know when newly loaded content is actually in place.
 - `animation_changed(dict)`: `{scene, label, playing, time, duration, progress, speed, frame, frames, loop}` — likewise rate-limited. A non-looping scene reaching its end reports `playing: False` at `progress: 1`; that report **is** the end-of-scene signal.
 
 #### Content
 - `show_scene(spec)`: any parametric spec, passed through as JSON — see [Parametric Primitives](../src/primitives.md)
 - `show_axes(arms=None, arm_length=1.0)`: convenience for the axes gizmo; each arm `{"axis": "+x".."-z", "color": hex (optional), "label": str | list}`
 - `load_model(path)`: local glTF/GLB — bytes are read in Python and handed to JS as base64, because Chromium refuses `fetch()` on `file://` URLs
+- `show_model(model, view=None)`: a MODEL — axes, seats and views as data. Marshalled whole; the page validates it against the same shipped schema this package would, so a model that passes here passes there. See [Making Models](../MODELS.md#model)
+- `set_model_view(name)`, `model_views(callback)`
 
 #### Parts
 `list_parts(callback)` (asynchronous), `set_part_visible`, `set_part_opacity`, `show_only`, `remove_part` — see [Making Models](../MODELS.md).
 
 #### Camera
-`set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)` (relative), `set_orbit(az, el)` (absolute), `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`.
+`set_view(name)`, `step_view(±1)`, `set_projection(kind)`, `orbit_by(az, el)` (relative), `set_orbit(az, el)` (absolute), `pan_by(dx, dy)`, `zoom_by(factor)`, `reset_view()`, `snap_to(direction)` — the last one takes a direction token or a vector, because the seven presets cannot express the four body diagonals a cube is read along.
+
+#### Switcher and orientation
+`set_switcher(register=None, reading=None)`, `switcher_state(callback)`, `set_orientation(id)`, `step_orientation(±1)` — see [Switcher](switcher.md) and [Orientations](orientations.md).
 
 #### Animation
 `set_animation(descriptor)`, `play_animation()`, `pause_animation()`, `toggle_animation()`, `stop_animation()`, `seek_animation(0…1)`, `step_frame(±1)`, `set_speed(x)`, `jump_to_end()`, `animation_state(callback)` — see [Animation Scenes](../SCENES.md).

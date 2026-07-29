@@ -19,6 +19,23 @@ Simple shapes computed from JSON specs (root Rule #19), with named parts. See [P
 ### `parts.js` — Part Addressing
 Show, hide, dim, solo and remove the individual elements of whatever is being shown. See [Parts](parts.md).
 
+### The Model Layer — Mirrors of the Python Modules
+
+These seven exist twice, once per language, for the reason the timeline does: a website has no Python and a lean Qt app has no browser. Each reads the same `shared/spec.json` (and `shared/model_schema.json`) as its Python twin, and `tests/test_model_parity.py` runs the two head to head and compares their output exactly. **The canonical documentation is the Python module's `.md`** — the JavaScript is the same rule in the other language, function for function.
+
+| File | Does | Documented in |
+|------|------|---------------|
+| `directions.js` | the direction token grammar — every direction the cube has, from one rule | [Directions](../preview3d/directions.md) |
+| `axiscolors.js` | the computed palette and the collision rule | [Axis Colours](../preview3d/axis_colors.md) |
+| `orientations.js` | the 24 orientations, and snap-view angles | [Orientations](../preview3d/orientations.md) |
+| `model.js` | the schema interpreter | [Model](../preview3d/model.md) |
+| `modelscene.js` | model data to a scene spec | [Model Scene](../preview3d/model_scene.md) |
+| `cubemodel.js` | the thirteen-axis cube, computed | [Cube Model](../preview3d/cube_model.md) |
+| `switcher.js` | register and reading as part operations | [Switcher](../preview3d/switcher.md) |
+
+### `modelview.js` — The Viewer's Model Half
+Small module (~70 lines, documented here). Split out of `viewer.js` so the container stays a container (root Rule #20): `buildModelContent` validates a model and builds its content, `viewSettings` returns a view's opacities and camera direction, `orientationQuaternion` turns an orientation id into a rotation, and `checkRegister` / `requireModel` are the two refusals. Nothing in it reaches into a viewer — it takes what it needs and returns what it decided, mirroring [Light Model View](../preview3d/light/model_view.md).
+
 ### `views.js` — View Presets
 Small data module (~40 lines, documented here). The seven standard directions and the order they cycle in:
 
@@ -82,4 +99,5 @@ sprite scale ← worldHeight × canvas aspect ratio
 - **Render-on-demand:** the animation loop ticks but only renders when the camera moved or something changed — the GPU is idle while the preview sits still (root Priority A; consumers are always-on desktop apps).
 - **IIFE bundle with a global**, not ESM: consumers are a PHP website and a Qt host page — one `<script src>` with zero build tooling on their side beats module plumbing.
 - **Defaults-as-config:** every tunable lives in an exported `*_DEFAULTS` object at the top of its module (root Rule #4), overridable per instance/spec.
-- **One palette table for all shapes:** the six pole colours live once in `primitives.js` and dress both the axes gizmo and the cube's faces — a colour belongs to a DIRECTION, not to the shape pointing that way (root Rule #19).
+- **One palette table for all shapes:** the six pole colours live once in `shared/spec.json` and dress both the axes gizmo and the cube's faces — a colour belongs to a DIRECTION, not to the shape pointing that way (root Rule #19). Every colour beyond those six is COMPUTED from them (`axiscolors.js`); a hardcoded derived hex fails `tests/test_axis_colors.py`.
+- **A direction is a grammar, not a table.** Six hardcoded entries could not express the cube's six edge axes or four vertex diagonals at all — which was the one thing a 3D previewer was commissioned to show.

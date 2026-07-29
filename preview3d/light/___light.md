@@ -2,12 +2,9 @@
 
 The LIGHT renderer: 3D drawn with QPainter — no browser engine, no GPU, no model files. One of the project's two interchangeable back ends; see [The Two Renderers](../../RENDERERS.md) for how to choose.
 
-Only `renderer.py` and `view.py` touch Qt. `vectors`, `scene`, `primitives`, `camera` and `animation` are pure Python, so the geometry and the timeline can be exercised without a GUI.
+Only `renderer.py` and `view.py` touch Qt. `scene`, `primitives`, `camera`, `animation` and `model_view` are pure Python, so the geometry, the timeline and the model half can be exercised without a GUI. The vector maths moved up to the package root as [Vectors](../vectors.md) once the pure model layer needed it too.
 
 ## Files
-
-### `vectors.py` — 3-Vector Helpers
-Small module (~70 lines, documented here). Plain tuples and functions rather than numpy: this renderer exists to keep consumers free of heavy dependencies, and its scenes are a few hundred polygons — far below where vectorisation would pay. Includes `basis_from(direction)` (the same orthonormal basis rule the web core uses, with world +Z standing in for world up on a straight top/bottom view) and `rotate_towards`, Rodrigues' formula, which orients a shape built along +Y onto an arbitrary axis exactly as the web core's quaternion does.
 
 ### `scene.py` — Scene Graph and Part Addressing
 Nodes, faces, segments, labels — and the part operations. See [Light Scene](scene.md).
@@ -20,6 +17,9 @@ Target, distance, azimuth, elevation, both projections, and the silhouette fit. 
 
 ### `animation.py` — Timeline
 Keyframe evaluation and the playback clock, mirroring the web core's timeline. See [Light Timeline](animation.md).
+
+### `model_view.py` — The Model Layer's Viewer-Side Operations
+Validate a model, build its content, resolve a view and an orientation. No Qt. See [Light Model View](model_view.md).
 
 ### `renderer.py` — Project, Sort, Paint
 The Qt painting layer. See [Light Renderer](renderer.md).

@@ -40,6 +40,7 @@ export function collectParts(root) {
             drawable: isDrawable(object),
             visible: object.visible,
             opacity: partOpacity(object),
+            color: partColor(object),
         });
     }
     return parts;
@@ -85,10 +86,24 @@ export function showOnly(root, groupPath, childName) {
     }
 }
 
+// A part's opacity is its OWN, and it multiplies down its subtree — dimming a
+// group dims everything under it without touching what those children say about
+// themselves. That is the LIGHT renderer's model too (a node's opacity times its
+// ancestors'), and the two must agree or `list_parts` reports two different
+// numbers for the same part.
+//
+// Pushing the value straight onto every descendant's material instead — which is
+// what this did — makes a child claim its parent's dimming as its own, and makes
+// re-lighting one child silently escape the group's dimming.
 export function setPartOpacity(root, path, alpha) {
-    requirePart(root, path).traverse((object) => {
-        if (isDrawable(object)) applyOpacity(object, alpha);
-    });
+    requirePart(root, path).userData.preview3dOpacity = alpha;
+    applyEffectiveOpacity(root, 1);
+}
+
+function applyEffectiveOpacity(object, inherited) {
+    const effective = inherited * (object.userData?.preview3dOpacity ?? 1);
+    if (isDrawable(object)) applyOpacity(object, effective);
+    for (const child of object.children) applyEffectiveOpacity(child, effective);
 }
 
 // Detach and release a part for good. Hiding is what you want for toggling;
@@ -109,9 +124,23 @@ function materialsOf(object) {
     return Array.isArray(object.material) ? object.material : [object.material];
 }
 
+// What was SET on this part, not what its material ended up at — the material
+// also carries whatever its ancestors contributed, and reporting that would make
+// a child of a dimmed group look as though someone had dimmed the child.
 function partOpacity(object) {
-    for (const material of materialsOf(object)) return material.opacity;
-    return 1;
+    return object.userData?.preview3dOpacity ?? 1;
+}
+
+// What colour a part actually wears, as '#RRGGBB', or null for a pure group.
+// Reported because a host needs it for a legend and because it is the ONLY way
+// a test can check that a computed palette (axiscolors.js) came out the same in
+// both renderers — the picture cannot be compared, but the value can.
+function partColor(object) {
+    if (object.userData?.preview3dColor) return object.userData.preview3dColor.toUpperCase();
+    for (const material of materialsOf(object)) {
+        if (material.color) return `#${material.color.getHexString().toUpperCase()}`;
+    }
+    return null;
 }
 
 function applyOpacity(object, alpha) {

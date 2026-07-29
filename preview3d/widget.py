@@ -151,10 +151,48 @@ class Preview3DWidget(QWebEngineView):
             spec["arms"] = arms
         self.show_scene(spec)
 
+    def show_model(self, model: dict, view: str | None = None) -> None:
+        """Show a MODEL — axes, seats and views as data (MODELS.md).
+
+        Marshalled whole: the page validates it against the same shipped schema
+        this package would, so a model that passes here passes there.
+        """
+        self._run(f"viewer.showModel({json.dumps(model)}, {json.dumps(view)})")
+
+    def set_model_view(self, name: str) -> None:
+        """One of the model's views — which families speak, and from where."""
+        self._run(f"viewer.setModelView({json.dumps(name)})")
+
+    def model_views(self, callback) -> None:
+        """Asynchronously deliver the model's views as [{name, label}, ...]."""
+        self._run_json("viewer.modelViews()", callback)
+
     def load_model(self, path: str | Path) -> None:
         """Load a local glTF/GLB file (bytes are handed to JS — file:// fetch is blocked)."""
         data = base64.b64encode(Path(path).read_bytes()).decode("ascii")
         self._run(f"viewer.loadModelData('{data}')")
+
+    # ---- Switcher and orientation -------------------------------------------
+
+    def set_switcher(self, register: str | None = None, reading: str | None = None) -> None:
+        """Which vocabulary speaks, and which readings are lit — see SWITCHER in MODELS.md."""
+        self._run(f"viewer.setSwitcher({json.dumps(register)}, {json.dumps(reading)})")
+
+    def switcher_state(self, callback) -> None:
+        """Asynchronously deliver {register, reading}.
+
+        The LIGHT widget accepts the same callback (and also returns the state
+        outright), so host code written this way drives either renderer.
+        """
+        self._run_json("viewer.switcherState()", callback)
+
+    def set_orientation(self, identifier: str | None) -> None:
+        """Snap the content to one of the cube's 24 orientations, or None for upright."""
+        self._run(f"viewer.setOrientation({json.dumps(identifier)})")
+
+    def step_orientation(self, step: int) -> None:
+        """The next orientation in the enumeration order; +1 forward, -1 back."""
+        self._run(f"viewer.stepOrientation({int(step)})")
 
     # ---- Parts -------------------------------------------------------------
 
@@ -212,6 +250,10 @@ class Preview3DWidget(QWebEngineView):
 
     def reset_view(self) -> None:
         self._run("viewer.resetView()")
+
+    def snap_to(self, direction) -> None:
+        """Look down an arbitrary direction — a token like '+x+y+z', or a vector."""
+        self._run(f"viewer.snapTo({json.dumps(direction)})")
 
     # ---- Appearance --------------------------------------------------------
 

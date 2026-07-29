@@ -14,7 +14,10 @@ from PySide6.QtCore import QPoint, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget
 
+from .. import switcher as switcher_ops
+from ..directions import parse_direction
 from ..resources import load_shared_spec
+from . import model_view
 from . import scene as scene_ops
 from .animation import ANIMATION_DEFAULTS, NO_ANIMATION, Timeline
 from .camera import (
@@ -71,6 +74,14 @@ class Preview3DLightWidget(QWidget):
         self._drag_origin: QPoint | None = None
         self._drag_button = Qt.MouseButton.NoButton
 
+        # Model state. A model is CONTENT, so showing anything else drops it —
+        # the same rule a loaded scene follows, and for the same reason: a view
+        # or a switcher position addresses parts of specific content.
+        self._model: dict | None = None
+        self._model_view: str | None = None
+        self._switcher = dict(switcher_ops.DEFAULT_STATE)
+        self._orientation: str | None = None
+
         # Animation. The timeline drives flat parameters only (see animation.py);
         # the two baselines are the framing it moves relative to, so one scene
         # descriptor plays correctly on content of any size.
@@ -88,9 +99,19 @@ class Preview3DLightWidget(QWidget):
 
     def show_scene(self, spec: dict) -> None:
         """Show a parametric primitive — the same spec the web renderer takes."""
-        self._root = Node(name="content")
-        self._root.add(build_primitive(spec))
+        root = Node(name="content")
+        root.add(build_primitive(spec))
+        self._mount(root)
+
+    def _mount(self, root: Node) -> None:
+        """Take a freshly built content root as the thing on screen."""
+        self._root = root
         self._content_version += 1
+        # New content is not the model's, and it is not turned: both are state
+        # about content that no longer exists.
+        self._model = None
+        self._model_view = None
+        self._orientation = None
         # A scene is written against the parts of specific content, so new
         # content invalidates it — keeping it would mean driving paths that need
         # not exist any more, and raising from inside show_scene() rather than
@@ -109,6 +130,34 @@ class Preview3DLightWidget(QWidget):
         if arms is not None:
             spec["arms"] = arms
         self.show_scene(spec)
+
+    def show_model(self, model: dict, view: str | None = None) -> None:
+        """Show a MODEL — axes, seats and views as data (MODELS.md).
+
+        See model_view.py for the model half; this only mounts what it returns.
+        """
+        checked, root = model_view.build_model_content(model)
+        self._mount(root)
+        self._model = checked
+        self._apply_switcher(force=True)
+        self.set_model_view(view or checked["views"][0]["name"])
+
+    def set_model_view(self, name: str) -> None:
+        """One of the model's views — which families speak, and from where."""
+        model_view.require_model(self._model, "set_model_view")
+        opacities, camera = model_view.view_settings(self._model, name)
+        for path, alpha in opacities.items():
+            scene_ops.set_part_opacity(self._root, path, alpha)
+        self._model_view = name
+        if camera:
+            self.snap_to(camera)
+        else:
+            self._changed()
+
+    def model_views(self) -> list[dict]:
+        """The model's views as {name, label} — what a host builds buttons from."""
+        model_view.require_model(self._model, "model_views")
+        return model_view.model_view_list(self._model)
 
     def load_model(self, path) -> None:
         """Not available in the LIGHT renderer — use the web-backed widget.
@@ -191,6 +240,16 @@ class Preview3DLightWidget(QWidget):
         self._view_name = name
         self._fit(view_direction(name))
 
+    def snap_to(self, direction) -> None:
+        """Look down an arbitrary direction — a token or a vector — and re-frame.
+
+        The seven presets cannot express the four body diagonals a cube is
+        actually read along, which is the whole reason a model's view carries a
+        camera direction instead of a preset name.
+        """
+        self._view_name = FREE_VIEW
+        self._fit(parse_direction(direction))
+
     def camera_state(self) -> dict:
         state = self._camera.state()
         state.update({
@@ -199,8 +258,60 @@ class Preview3DLightWidget(QWidget):
             "gridStep": self._grid_step,
             "background": self._background,
             "contentVersion": self._content_version,
+            "orientation": self._orientation,
+            "modelView": self._model_view,
         })
         return state
+
+    # ---- Orientation -------------------------------------------------------
+
+    def set_orientation(self, identifier: str | None) -> None:
+        """Snap the content to one of the cube's 24 orientations (or `None`).
+
+        The table is computed, not stored (orientations.py). Deliberately does
+        NOT re-frame: a cube keeps its silhouette as it turns, and re-fitting on
+        every step would make a stepped clock jitter for no gain.
+        """
+        if identifier == self._orientation:
+            return
+        self._orientation = identifier
+        self._root.basis = model_view.orientation_basis(identifier)
+        self._rebuild_grid()
+        self._changed()
+
+    def step_orientation(self, step: int) -> None:
+        """The next orientation in the enumeration order — the auto-advance step."""
+        self.set_orientation(orientations.step_orientation(self._orientation or "", step))
+
+    # ---- Switcher ----------------------------------------------------------
+
+    def set_switcher(self, register: str | None = None, reading: str | None = None) -> None:
+        """Which vocabulary speaks, and which readings are lit — see switcher.py."""
+        state = switcher_ops.normalise(self._switcher, register, reading)
+        model_view.check_register(self._model, state["register"])
+        if state == self._switcher:
+            return
+        self._switcher = state
+        self._apply_switcher(force=True)
+        self._changed()
+
+    def switcher_state(self, callback=None) -> dict:
+        """The current switcher position. Same both-shapes contract as `list_parts`."""
+        state = dict(self._switcher)
+        if callback is not None:
+            callback(state)
+        return state
+
+    def _apply_switcher(self, force: bool = False) -> None:
+        for operation, path, value in switcher_ops.operations(
+            scene_ops.collect_parts(self._root), self._switcher
+        ):
+            if operation == "visible":
+                scene_ops.set_part_visible(self._root, path, value)
+            else:
+                scene_ops.show_only(self._root, path, value)
+        if force:
+            self.update()
 
     # ---- Appearance --------------------------------------------------------
 
@@ -447,6 +558,12 @@ class Preview3DLightWidget(QWidget):
             elif channel == "grid":
                 if value != self._grid_enabled:
                     self.set_grid(value)
+            elif channel == "switcher.register":
+                self.set_switcher(register=value)
+            elif channel == "switcher.reading":
+                self.set_switcher(reading=value)
+            elif channel == "content.orientation":
+                self.set_orientation(value)
             else:
                 raise ValueError(f"Preview3DLightWidget cannot apply channel {channel!r}")
 

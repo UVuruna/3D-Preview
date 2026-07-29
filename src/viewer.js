@@ -14,6 +14,13 @@ import { attachKeyboard } from './keyboard.js';
 import { collectParts, removePart, setPartOpacity, setPartVisible, showOnly } from './parts.js';
 import { FREE_VIEW, stepView, viewDirection } from './views.js';
 import { NO_ANIMATION, Timeline } from './animation.js';
+import { parseDirection } from './directions.js';
+import {
+    buildModelContent, checkRegister, modelViewList, orientationQuaternion,
+    requireModel, viewSettings,
+} from './modelview.js';
+import { stepOrientation } from './orientations.js';
+import { DEFAULT_STATE as SWITCHER_DEFAULT, normalise as normaliseSwitcher, operations as switcherOperations } from './switcher.js';
 
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const WORLD_FORWARD = new THREE.Vector3(0, 0, 1);   // basis reference for a top/bottom view
@@ -93,6 +100,14 @@ export class Viewer {
         this._lastAnimationAt = 0;
         this._lastTickAt = 0;
 
+        // Model state. A model is CONTENT, so showing anything else drops it —
+        // the same rule a loaded scene follows, and for the same reason: a view
+        // or a switcher position addresses parts of specific content.
+        this._model = null;
+        this._modelView = null;
+        this._switcher = { ...SWITCHER_DEFAULT };
+        this._orientation = null;
+
         this._makeControls();
         this.setBackground(this.options.background);
         this._detachKeyboard = this.options.keyboard ? attachKeyboard(this, container) : null;
@@ -116,6 +131,36 @@ export class Viewer {
             return this.loadModel(spec.url);
         }
         this._setContent(buildPrimitive(spec));
+    }
+
+    // Show a MODEL — axes, seats and views as data (MODELS.md). See modelview.js.
+    showModel(model, view) {
+        const built = buildModelContent(model);
+        this._setContent(built.content);
+        this._model = built.model;
+        this._applySwitcher();
+        this.setModelView(view ?? built.model.views[0].name);
+    }
+
+    // One of the model's views — which families speak, and from where.
+    setModelView(name) {
+        requireModel(this._model, 'setModelView');
+        const settings = viewSettings(this._model, name);
+        for (const [path, alpha] of Object.entries(settings.opacity)) {
+            setPartOpacity(this._content, path, alpha);
+        }
+        this._modelView = name;
+        if (settings.camera) this.snapTo(settings.camera);
+        else {
+            this._notifyCamera(true);
+            this.requestRender();
+        }
+    }
+
+    // The model's views as {name, label} — what a host builds buttons from.
+    modelViews() {
+        requireModel(this._model, 'modelViews');
+        return modelViewList(this._model);
     }
 
     // Load a glTF/GLB model over HTTP(S) or a relative URL.
@@ -145,6 +190,12 @@ export class Viewer {
         this._clear();
         this._content.add(object);
         this._contentVersion += 1;
+        // New content is not the model's, and it is not turned: both are state
+        // about content that no longer exists.
+        this._model = null;
+        this._modelView = null;
+        this._orientation = null;
+        this._content.quaternion.identity();
         // A scene is written against the parts of specific content, so new
         // content invalidates it — keeping it would mean driving paths that
         // need not exist any more, and failing from inside show() rather than
@@ -346,6 +397,62 @@ export class Viewer {
         this.setView(this.viewName === FREE_VIEW ? this.options.view : this.viewName);
     }
 
+    // Look down an arbitrary direction — a token or a vector — and re-frame.
+    // The seven presets cannot express the four body diagonals a cube is
+    // actually read along, which is the whole reason a model's view carries a
+    // camera direction instead of a preset name.
+    snapTo(direction) {
+        this._direction.set(...parseDirection(direction));
+        this.viewName = FREE_VIEW;
+        this.fitView();
+    }
+
+    // ---- Orientation ------------------------------------------------------
+
+    // Snap the content to one of the cube's 24 orientations (or null). The
+    // table is computed, not stored (orientations.js). Deliberately does NOT
+    // re-frame: a cube keeps its silhouette as it turns, and re-fitting on
+    // every step would make a stepped clock jitter for no gain.
+    setOrientation(identifier) {
+        if (identifier === this._orientation) return;
+        this._orientation = identifier ?? null;
+        const rotation = orientationQuaternion(this._orientation);
+        if (rotation) this._content.quaternion.copy(rotation);
+        else this._content.quaternion.identity();
+        this._rebuildGrid();
+        this._notifyCamera(true);
+        this.requestRender();
+    }
+
+    // The next orientation in the enumeration order — the auto-advance step.
+    stepOrientation(step) {
+        this.setOrientation(stepOrientation(this._orientation ?? '', step));
+    }
+
+    // ---- Switcher ---------------------------------------------------------
+
+    // Which vocabulary speaks, and which readings are lit — see switcher.js.
+    setSwitcher(register, reading) {
+        const state = normaliseSwitcher(this._switcher, register, reading);
+        checkRegister(this._model, state.register);
+        if (state.register === this._switcher.register && state.reading === this._switcher.reading) return;
+        this._switcher = state;
+        this._applySwitcher();
+        this._notifyCamera(true);
+        this.requestRender();
+    }
+
+    switcherState() {
+        return { ...this._switcher };
+    }
+
+    _applySwitcher() {
+        for (const [operation, path, value] of switcherOperations(this.listParts(), this._switcher)) {
+            if (operation === 'visible') setPartVisible(this._content, path, value);
+            else showOnly(this._content, path, value);
+        }
+    }
+
     // Azimuth/elevation in degrees, plus distance and the active modes —
     // everything a host needs for a "you are looking from…" readout.
     cameraState() {
@@ -361,6 +468,8 @@ export class Viewer {
             gridStep: this.gridStep,
             background: this.background,
             contentVersion: this._contentVersion,
+            orientation: this._orientation,
+            modelView: this._modelView,
         };
     }
 
@@ -645,6 +754,9 @@ export class Viewer {
                 case 'part.visible': setPartVisible(this._content, path, value); break;
                 case 'group.show': showOnly(this._content, path, value); break;
                 case 'grid': if (value !== this.gridEnabled) this.setGrid(value); break;
+                case 'switcher.register': this.setSwitcher(value, null); break;
+                case 'switcher.reading': this.setSwitcher(null, value); break;
+                case 'content.orientation': this.setOrientation(value); break;
                 default: throw new Error(`Viewer cannot apply channel '${channel}'`);
             }
         }
