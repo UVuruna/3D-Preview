@@ -40,6 +40,37 @@ These are PLAN.md's golden tests made concrete. Every shipped scene is driven to
 
 **It found a real one on its first run:** the cube's wireframe was drawn at 0.35 opacity by the web core (hardcoded in the line material) and at 1.0 by the LIGHT one, which then applied a separate ×0.45 at paint time — two renderers reporting different opacity for the same part. The value now lives in `shared/spec.json` as `neutral.edgeOpacity` and both read it.
 
+### `test_axis_geometry.py` — ANGLE EXACTNESS
+
+The reason this component exists: a flat wheel cannot show an edge axis at its real angle, and an axis drawn at an approximated angle would look plausible and teach the wrong thing. Every direction's dot products are pinned — edge axes at exactly 45° to each of their two parent poles and 90° to the third, body diagonals at exactly `acos(1/√3)` to all three of theirs — together with the token grammar's refusals and **golden screen projections**: under the isometric orthographic camera the six primary arms land exactly 30° apart at one radius, and `+x+y+z` projects to the exact centre.
+
+Guards the gap that made M2 necessary: the direction table used to be six hardcoded entries in each renderer, so the cube's six edge axes and four vertex diagonals could not be expressed at all.
+
+### `test_axis_colors.py` — The Computed Palette and the Collision Rule
+
+Colours are derived from the pole hues by four rules, never enumerated (owner decree 2026-07-28). These pin the arithmetic, the golden hexes, and the collision rule with teeth: **the plain blends really do collide** (the worst, `+x+y-z`, lands 15 units from the orange pole) and the dressed ones clear the threshold by more than four times. The verifier itself is checked by being made to fail. A test also fails the build if either language hardcodes a derived hex instead of computing it.
+
+### `test_orientations.py` — Snap Views and the 24 Orientations
+
+The 24 orientations are computed from 6 up-faces × 4 spins. The thing that would silently go wrong is a **reflection passing for a rotation** — the cube comes back mirrored and a screenshot looks perfectly fine — so every one is checked for orthonormality and determinant +1, all 24 for distinctness, and each for putting the named face where it says. Plus the snap views, including the perpendicular-to-the-sacred-axis direction the tertiary view uses.
+
+### `test_model_schema.py` — What a Consumer's Exporter Is Held To
+
+PLAN.md promised one renderer-neutral schema and that "the demo model and DOMY's exported model both validate". DOMY generates its model from its canon, so the failure guarded here is a field that is quietly wrong in generated data and surfaces three screens later as a missing label. Twelve kinds of breakage are each required to fail **with the path of the offending field**, and a model carrying fewer registers is held to exactly those.
+
+### `test_model_parity.py` — The Model Layer, in Two Languages and Two Renderers
+
+The model layer exists twice for the reason the timeline does. Two levels of pin:
+
+1. **Data parity** — the JS model layer is run head to head with the Python one and their OUTPUT compared exactly: the computed palette, the whole model, the scene spec it becomes, and the 24 orientations. The strongest check the component has, because the answer here is a value rather than a picture. Needs Node only to run the JS at all, and skips without it.
+2. **Renderer parity** — the same model goes into both widgets: part paths, per-part **colour**, the Switcher's effect, each owner view's opacities, and that other content drops the model in both.
+
+**It found a real one on its first run:** a group's opacity was reported as 1 by the web core and as the set value by the LIGHT one, because the web core pushed the value straight onto every descendant's material. Opacity now multiplies down in both, and a part reports its OWN — which also means re-lighting one child can no longer escape its group's dimming.
+
+### `test_structure_law.py` — The God-File Ratchet
+
+Root CLAUDE.md Priority S / Rule #20. Fails the build when any `.py` or `.js` source crosses ~1,000 lines outside a named ratchet allowlist that may only shrink. **The ratchet is empty**, which is the point. Both languages are counted; `web/preview3d.min.js` is excluded as a build artifact.
+
 ## Connections
 
 ### Uses
