@@ -1,7 +1,8 @@
 """3D Preview — demo application entry point.
 
-Run with `python main.py`. Everything it shows is documented in main.md;
-the window itself lives in demoapp/.
+Run with `python main.py`. Pure wiring (Trivial tier, root DOCS.md) — see
+README.md's "Run the Demo" section for what it shows; the window itself
+lives in demoapp/ (demoapp/___demoapp.md).
 """
 
 import logging
