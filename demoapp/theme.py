@@ -6,7 +6,11 @@ Single source for every colour, radius and spacing value in the demo app
 
 from pathlib import Path
 
+# ═══════════════════════════ FONT ═══════════════════════════
+
 FONT_FILE = Path(__file__).parent.parent / "assets" / "fonts" / "Inter.ttf"
+
+# ═══════════════════════════ THEME TOKENS ═══════════════════════════
 
 # DESIGN.md dark surfaces with one indigo accent.
 THEME = {
@@ -27,6 +31,9 @@ THEME = {
     "space_m": 16,
     "space_l": 24,
 }
+
+
+# ═══════════════════════════ STYLESHEET ═══════════════════════════
 
 
 def build_qss(theme: dict) -> str:

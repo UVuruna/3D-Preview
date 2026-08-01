@@ -21,6 +21,8 @@
 
 import SHARED from '../shared/spec.json';
 
+// ═══════════════════════════ SWITCHER STATE ═══════════════════════════
+
 const CONFIG = SHARED.switcher;
 
 export const REGISTERS = CONFIG.registers;
@@ -34,6 +36,8 @@ export const DEFAULT_STATE = Object.freeze({
     register: DEFAULT_REGISTER,
     reading: DEFAULT_READING,
 });
+
+// ═══════════════════════════ STATE OPERATIONS ═══════════════════════════
 
 // A complete, checked switcher state — unknown values fail loudly.
 export function normalise(state, register, reading) {

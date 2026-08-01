@@ -34,11 +34,15 @@ from .model_panel import DEMO_MODEL, ModelPanel
 from .parts_panel import PartsPanel
 from .theme import THEME
 
+# ═══════════════════════════ RENDERER OPTIONS ═══════════════════════════
+
 # The two interchangeable renderers — see RENDERERS.md.
 RENDERERS = [
     ("web", "Web", Preview3DWidget, True),
     ("light", "Light", Preview3DLightWidget, False),
 ]
+
+# ═══════════════════════════ WINDOW GEOMETRY ═══════════════════════════
 
 WINDOW = {
     "title": "3D Preview — Demo",
@@ -52,6 +56,8 @@ WINDOW = {
 }
 PANEL_WIDTH = 300
 STAGE_MINIMUM = (220, 160)
+
+# ═══════════════════════════ DEMO SCENES ═══════════════════════════
 
 # The demo scenes: parametric specs, not model files (root Rule #19).
 DEMO_SCENES = [
@@ -87,6 +93,8 @@ DEMO_SCENES = [
     },
 ]
 
+# ═══════════════════════════ ANIMATION DATA ═══════════════════════════
+
 # The animation scenes ship with the component as DATA — the demo plays the
 # very same descriptors both renderers read (shared/scenes.json, SCENES.md).
 ANIMATIONS = load_shared_scenes()
@@ -103,6 +111,8 @@ TRANSPORT = [
 ]
 SCRUB_STEPS = 1000     # slider resolution; the scene's own frame count drives stepping
 
+# ═══════════════════════════ VIEW & DISPLAY OPTIONS ═══════════════════════════
+
 VIEW_BUTTONS = [
     ("iso", "Iso"), ("front", "Front"), ("right", "Right"), ("back", "Back"),
     ("left", "Left"), ("top", "Top"), ("bottom", "Bottom"),
@@ -116,6 +126,8 @@ BACKGROUNDS = [
     {"name": "Transparent", "color": "transparent"},
 ]
 
+# ═══════════════════════════ MISC UI DATA ═══════════════════════════
+
 CONTROLS_LEGEND = [
     ("Drag", "Rotate"),
     ("Wheel", "Zoom"),
@@ -128,6 +140,8 @@ CONTROLS_LEGEND = [
 ]
 
 MODEL_FILTER = "3D models (*.glb *.gltf)"
+
+# ═══════════════════════════ WINDOW ═══════════════════════════
 
 
 class DemoWindow(QWidget):

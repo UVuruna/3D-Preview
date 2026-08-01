@@ -23,6 +23,8 @@ Pure Python; the JS mirror is src/switcher.js.
 
 from .resources import load_shared_spec
 
+# ═══════════════════════════ SWITCHER STATE ═══════════════════════════
+
 _SPEC = load_shared_spec()
 _SWITCHER: dict = _SPEC["switcher"]
 
@@ -35,6 +37,8 @@ DEFAULT_READING: str = _SWITCHER["defaultReading"]
 LABEL_PREFIX = "label:"
 
 DEFAULT_STATE = {"register": DEFAULT_REGISTER, "reading": DEFAULT_READING}
+
+# ═══════════════════════════ STATE OPERATIONS ═══════════════════════════
 
 
 def normalise(state: dict | None = None, register: str | None = None,
