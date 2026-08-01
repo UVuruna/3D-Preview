@@ -1,6 +1,10 @@
 # CLAUDE.md — 3D Preview
 
-Inherits all rules from the root [CLAUDE.md](../../CLAUDE.md). Project-specific guidance below.
+Inherits all rules from the root `CLAUDE.md` constitution — read it and the
+`Router` table there first to load only the rulebooks (`rules/CODE.md`,
+`rules/DOCS.md`, `rules/GUI.md`, `rules/SHIP.md`, `rules/PLAN.md`,
+`rules/START.md`) your job this session actually needs. Project-specific
+guidance below — no root rule is restated here.
 
 ## What This Is
 
