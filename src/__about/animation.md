@@ -1,14 +1,16 @@
 # Timeline
 
-**Script:** [Timeline (script)](animation.js)
+**Script:** [Timeline (script)](../animation.js)
+
+**Flow:** [diagram](../__flow/animation.md)
 
 ## Purpose
 
-The animation driver for the web core: turns a scene descriptor — keyframes over flat parameters — into resolved values at any instant, and keeps the playback clock that walks through them.
+The animation driver for the WEB core: turns a scene descriptor — keyframes over flat parameters — into resolved values at any instant, and keeps the playback clock that walks through them.
 
-It knows **nothing about rendering**. `sample()` returns plain `{channel, path, value}` entries and the [Viewer](viewer.md) applies them, which is exactly what lets the LIGHT renderer run the identical descriptor through its own applier.
+It knows **nothing about rendering**. `sample()` returns plain `{channel, path, value}` entries and [Viewer](viewer.md) applies them, which is exactly what lets the LIGHT renderer run the identical descriptor through its own applier.
 
-The scene format itself is documented once, for both renderers, in [Animation Scenes](../SCENES.md).
+The scene format itself is documented once, for both renderers, in [Animation Scenes](../../SCENES.md).
 
 ## Connections
 
@@ -17,8 +19,8 @@ The scene format itself is documented once, for both renderers, in [Animation Sc
 
 ### Used by
 - [Viewer](viewer.md) — owns one `Timeline` and applies its samples
-- [Source (folder)](___src.md) — exported through the public API
-- [Light Timeline](../preview3d/light/animation.md) — the mirror implementation in Python
+- [Source (folder)](../___src.md) — exported through the public API
+- [Light Timeline](../../preview3d/light/__about/animation.md) — the mirror implementation in Python
 
 ## Exports
 
@@ -31,47 +33,21 @@ The scene format itself is documented once, for both renderers, in [Animation Sc
 ## Classes
 
 ### Timeline
+The loaded scene plus its clock.
 
 #### Attributes
 - `name`, `label`, `duration`, `loop` — from the descriptor
 - `fps`, `frames` — the fixed step rate and the scene's frame count
-- `tracks` — validated tracks, keys sorted by `t`
+- `tracks` — validated tracks (each `{channel, path, keys}`), keys sorted by `t`
 - `time`, `speed`, `playing` — the clock
 - `progress` (getter) — `time / duration`
-- `frame` (getter) — the current frame index
+- `frame` (getter) — the current frame index, rounded
 
-#### Evaluation
+#### Methods
 - `sample(progress)`: every track resolved at `progress` → `[{channel, path, value}]`
 - `values()`: `sample()` at the current instant
-
-#### Transport
-`play()`, `pause()`, `toggle()`, `stop()`, `seek(progress)`, `stepFrame(±1)`, `setSpeed(x)`, `jumpToEnd()`, `state()`.
-
-#### Clock
+- `play()`, `pause()`, `toggle()`, `stop()`, `seek(progress)`, `stepFrame(±1)`, `setSpeed(x)`, `jumpToEnd()`, `state()` — transport
 - `tick(elapsedSeconds)`: advances by whole fixed steps; returns `true` if the time moved
-
-## Interpolation
-
-```
-value of a track at progress p:
-
-    IF p ≤ first key's t   → first key's value
-    IF p ≥ last key's t    → last key's value
-    OTHERWISE:
-        from, to  ← the key pair bracketing p
-        local     ← (p − from.t) / (to.t − from.t)
-
-        IF from.value AND to.value are both numbers:
-            → from.value + (to.value − from.value) × ease(from.ease, local)
-        IF from.value AND to.value are both vectors of the SAME length:
-            → each component lerped the same way             # part.position
-        OTHERWISE:
-            → from.value            # names, flags and mismatched shapes STEP
-```
-
-A key's easing governs the segment that **starts** at it, so the last key's easing is never used.
-
-A **vector** is a fixed-length array of numbers — `part.position`'s `[x, y, z]`, the channel M3 added so a scene can slide a part (a bead to its station, a seat collapsing to the centre) rather than only fade or step it. It lerps component-wise by the identical rule a lone number follows; two vectors of different lengths cannot be lerped and step instead, the same fallback a name or a flag gets.
 
 ## Design Decisions
 
@@ -81,4 +57,4 @@ A **vector** is a fixed-length array of numbers — `part.position`'s `[x, y, z]
 - **Fixed timestep.** Wall time accumulates and is spent in whole 1/fps steps, so a scene evaluates at the same instants regardless of the host's frame rate — that is what makes both renderers agree and `stepFrame` mean something exact. `maxStep` caps the catch-up so a hidden tab does not fast-forward the scene on return.
 - **`t` is a fraction, not seconds.** Changing `duration` re-times a whole scene without touching a key.
 - **No end-of-scene callback.** A finished non-looping scene simply reports `playing: false` at `progress: 1`; a second mechanism would be one more thing to miss.
-- **The easing names in `shared/spec.json` are checked against what is implemented, at module load.** Advertising a curve to scene authors that does not exist would be a silent authoring trap.
+- **The easing names in `shared/spec.json` are checked against what is implemented, at module load** (a loop over `ANIMATION_DEFAULTS.easings` throws if `animation.js` is missing one) — advertising a curve to scene authors that does not exist would be a silent authoring trap.

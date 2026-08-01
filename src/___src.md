@@ -1,99 +1,42 @@
 # src/
 
-JavaScript source of the 3D Preview core. Bundled by esbuild (`npm run build`) into `web/preview3d.min.js` as an IIFE with the global name `Preview3D`.
+JavaScript source of the WEB renderer's 3D Preview core. Bundled by esbuild (`npm run build`) into `web/preview3d.min.js` as an IIFE with the global name `Preview3D` — see `package.json`'s `build` script.
 
 ## Files
 
-### `index.js` — Public API
-Entry point (~25 lines, documented here). Re-exports `Viewer`, `buildPrimitive`, `makeLabelSprite`, `Timeline`, the pole colour table, the view presets, the shipped animation scenes as `SCENES`, and the tunable defaults of every module — and defines `mount(container, options)`, the one call every consumer starts with.
+| File | Tier | One line |
+|------|------|----------|
+| `index.js` | Trivial | public API — re-exports every module and defines `mount(container, options)`, the one call every consumer starts with |
+| `viewer.js` | Algorithmic | the container — renderer, both cameras, orbit controls, lighting, content lifecycle, framing, grid, animation playback — [about](__about/viewer.md) · [flow](__flow/viewer.md) |
+| `animation.js` | Algorithmic | the Timeline — keyframes and easing over flat parameters, plus the playback clock — [about](__about/animation.md) · [flow](__flow/animation.md) |
+| `primitives.js` | Algorithmic | parametric shapes computed from JSON specs, named parts — [about](__about/primitives.md) · [flow](__flow/primitives.md) |
+| `parts.js` | Standard | show, hide, dim, solo and remove the individual elements of whatever is shown — [about](__about/parts.md) |
+| `directions.js` | Algorithmic | the direction token grammar — every direction the cube has, from one rule — [about](__about/directions.md) · [flow](__flow/directions.md) |
+| `axiscolors.js` | Algorithmic | the computed palette and the collision rule — [about](__about/axiscolors.md) · [flow](__flow/axiscolors.md) |
+| `orientations.js` | Algorithmic | the 24 orientations, and snap-view angles — [about](__about/orientations.md) · [flow](__flow/orientations.md) |
+| `model.js` | Algorithmic | the schema interpreter for `shared/model_schema.json` — [about](__about/model.md) · [flow](__flow/model.md) |
+| `modelscene.js` | Standard | model data to a scene spec — the one translation, in plain data — [about](__about/modelscene.md) |
+| `cubemodel.js` | Standard | the thirteen-axis cube, computed — 13 axes, 27 seats, 4 views — [about](__about/cubemodel.md) |
+| `switcher.js` | Standard | which vocabulary speaks and which readings are lit, as flat part operations — [about](__about/switcher.md) |
+| `cinematics.js` | Algorithmic | cinematic scene generators — the Five Stations for any of the 13 axes — [about](__about/cinematics.md) · [flow](__flow/cinematics.md) |
+| `modelview.js` | Standard | the model layer's viewer-side operations, split out so the container stays a container — [about](__about/modelview.md) |
+| `views.js` | Trivial | the seven standard view presets and the cycle order |
+| `grid.js` | Standard | the optional ground grid, sized to the content — [about](__about/grid.md) |
+| `keyboard.js` | Standard | key bindings, each one a thin call into the Viewer's public API — [about](__about/keyboard.md) |
+| `labels.js` | Standard | text label sprites drawn onto a canvas at runtime, no image assets — [about](__about/labels.md) |
 
-### `viewer.js` — Viewer Container
-The container itself: renderer, the two cameras, orbit controls, lighting, content lifecycle, framing, grid, animation playback, camera- and playback-state events, and the part operations a host calls. See [Viewer](viewer.md).
-
-### `animation.js` — Timeline
-Scenes as data: keyframes and easing over flat parameters, plus the playback clock. See [Timeline](animation.md).
-
-### `primitives.js` — Parametric Primitives
-Simple shapes computed from JSON specs (root Rule #19), with named parts. See [Parametric Primitives](primitives.md).
-
-### `parts.js` — Part Addressing
-Show, hide, dim, solo and remove the individual elements of whatever is being shown. See [Parts](parts.md).
-
-### The Model Layer — Mirrors of the Python Modules
-
-These seven exist twice, once per language, for the reason the timeline does: a website has no Python and a lean Qt app has no browser. Each reads the same `shared/spec.json` (and `shared/model_schema.json`) as its Python twin, and `tests/test_model_parity.py` runs the two head to head and compares their output exactly. **The canonical documentation is the Python module's `.md`** — the JavaScript is the same rule in the other language, function for function.
-
-| File | Does | Documented in |
-|------|------|---------------|
-| `directions.js` | the direction token grammar — every direction the cube has, from one rule | [Directions](../preview3d/directions.md) |
-| `axiscolors.js` | the computed palette and the collision rule | [Axis Colours](../preview3d/axis_colors.md) |
-| `orientations.js` | the 24 orientations, and snap-view angles | [Orientations](../preview3d/orientations.md) |
-| `model.js` | the schema interpreter | [Model](../preview3d/model.md) |
-| `modelscene.js` | model data to a scene spec | [Model Scene](../preview3d/model_scene.md) |
-| `cubemodel.js` | the thirteen-axis cube, computed | [Cube Model](../preview3d/cube_model.md) |
-| `switcher.js` | register and reading as part operations | [Switcher](../preview3d/switcher.md) |
-| `cinematics.js` | cinematic scene GENERATORS — the Five Stations for any of the 13 axes | [Cinematics](../preview3d/cinematics.md) |
-
-### `modelview.js` — The Viewer's Model Half
-Small module (~70 lines, documented here). Split out of `viewer.js` so the container stays a container (root Rule #20): `buildModelContent` validates a model and builds its content, `viewSettings` returns a view's opacities and camera direction, `orientationQuaternion` turns an orientation id into a rotation, and `checkRegister` / `requireModel` are the two refusals. Nothing in it reaches into a viewer — it takes what it needs and returns what it decided, mirroring [Light Model View](../preview3d/light/model_view.md).
-
-### `views.js` — View Presets
-Small data module (~40 lines, documented here). The seven standard directions and the order they cycle in:
-
-| Preset | Direction (from content toward camera) |
-|--------|----------------------------------------|
-| `iso` | `(1, 1, 1)` — the body diagonal; the only direction whose cube silhouette is a hexagon |
-| `front` / `back` | `(0, 0, ±1)` |
-| `right` / `left` | `(±1, 0, 0)` |
-| `top` / `bottom` | `(0, ±1, 0)` |
-
-`stepView(current, ±1)` walks that order; `FREE_VIEW` (`'free'`) is what the viewer reports once the user has orbited off a preset. An unknown name throws with the list of valid ones (root Rule #1).
-
-### `grid.js` — Ground Grid
-Small module (~50 lines, documented here). Builds an optional reference plane sized to the content instead of a fixed helper that is wrong for anything but a unit cube.
-
-```
-box      ← bounds of the content
-footprint← max(width, depth, height / 2)
-span     ← footprint × spanFactor
-step     ← round span / targetCells UP to the nearest 1, 2 or 5 × 10ⁿ
-grid     ← GridHelper(step × divisions, divisions), centred under the content,
-           sitting on its floor, depth-write off so it never occludes the model
-```
-
-The rounded step is why the camera readout can honestly say "0.5 per cell". The grid lives in the scene but **outside** the content group, so it never affects framing.
-
-### `keyboard.js` — Key Bindings
-Small module (~60 lines, documented here). Each binding is one call into the Viewer's public API, so a GUI button and a key do the same thing.
-
-| Key | Action |
-|-----|--------|
-| Arrows | Orbit in steps — move around the model |
-| Ctrl + Arrows | Pan — move the point being looked at |
-| Shift + ← / → | Previous / next view preset |
-| Shift + ↑ / ↓ | Top / bottom view |
-| `+` / `−` | Zoom |
-| `P` · `G` · `R` | Projection · grid · reset |
-
-Bound to the **container**, not to `window`: a viewer embedded in someone else's page must not swallow that page's arrow keys. Clicking the viewer focuses it; the bundled host page focuses it on load.
-
-### `labels.js` — Text Label Sprites
-Small module (~40 lines, documented here): draws text onto a 2D canvas at runtime and mounts it as a camera-facing sprite — no image assets.
-
-```
-measure text width with the chosen font
-size canvas ← text width + padding, font height + padding
-draw centered text onto the canvas
-texture ← canvas; sprite material ← texture (transparent)
-sprite scale ← worldHeight × canvas aspect ratio
-```
+`directions.js`, `axiscolors.js`, `orientations.js`, `model.js`, `modelscene.js`, `cubemodel.js`, `switcher.js` and `cinematics.js` — **the model layer** — exist twice, once per language, for the reason the timeline does: a website has no Python and a lean Qt app has no browser. Each reads the same `shared/spec.json` (and `shared/model_schema.json`), and `tests/test_model_parity.py` runs the two head to head and compares their output exactly. Every one of the eight has a mirror doc linked from its own `__about/` page — the mirror is the SAME logic in the other language, function for function, not a different design.
 
 ## Connections
 
+### Uses
+- `three` (npm) — the WEB renderer's engine; bundled in, no runtime dependency for a consumer
+- `shared/spec.json`, `shared/scenes.json`, `shared/model_schema.json` — the values and shipped scenes both renderers must agree on
+
 ### Used by
-- [Web (folder)](../web/___web.md) — the built bundle is the shipped form of these sources
+- [Web (folder)](../web/___web.md) — the built bundle (`preview3d.min.js`) is the shipped form of these sources
 - [Demo (folder)](../demo/___demo.md) — drives the bundle from a browser page
-- [Preview3d Package (folder)](../preview3d/___preview3d.md) — drives the bundle from PySide6
+- [Preview3d Package (folder)](../preview3d/___preview3d.md) — drives the bundle from PySide6 (`Preview3DWidget`)
 
 ## Design Decisions
 
@@ -102,3 +45,4 @@ sprite scale ← worldHeight × canvas aspect ratio
 - **Defaults-as-config:** every tunable lives in an exported `*_DEFAULTS` object at the top of its module (root Rule #4), overridable per instance/spec.
 - **One palette table for all shapes:** the six pole colours live once in `shared/spec.json` and dress both the axes gizmo and the cube's faces — a colour belongs to a DIRECTION, not to the shape pointing that way (root Rule #19). Every colour beyond those six is COMPUTED from them (`axiscolors.js`); a hardcoded derived hex fails `tests/test_axis_colors.py`.
 - **A direction is a grammar, not a table.** Six hardcoded entries could not express the cube's six edge axes or four vertex diagonals at all — which was the one thing a 3D previewer was commissioned to show.
+- **`viewer.js` is 912 lines — inside root Rule #20's "smell" band (500–1,000), not over the 1,000-line violation threshold.** Its responsibilities (renderer/camera lifecycle, part delegation, animation playback, model/switcher plumbing) are already partly extracted into `parts.js`, `modelview.js`, `grid.js` and `keyboard.js`; what remains is still one cohesive container. Flagged here rather than split unilaterally — a further split is a real refactor (new module boundaries, every caller updated) out of scope for this documentation migration.
