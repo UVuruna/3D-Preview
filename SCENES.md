@@ -215,7 +215,7 @@ The five scenes PLAN.md's "Cinematic Scenes — Self-Playing Instructions" commi
 
 ### Hexagram X-ray — Offices (`hexagram_offices`) and Being (`hexagram_being`)
 
-*Storyboard: PLAN.md, Scene 1.* The camera flies to the `+x+y+z` body diagonal while the shell thins to glass and the projection blends perspective → orthographic; at alignment the silhouette is already the regular hexagon (free, from the cube's own geometry under orthographic), and the two triangles of the [`hexagram`](src/primitives.md) overlay draw themselves in.
+*Storyboard: PLAN.md, Scene 1.* The camera flies to the `+x+y+z` body diagonal while the shell thins to glass and the projection blends perspective → orthographic; at alignment the silhouette is already the regular hexagon (free, from the cube's own geometry under orthographic), and the two triangles of the [`hexagram`](src/__about/primitives.md) overlay draw themselves in.
 
 - **Content:** a bespoke `group` — a poles-coloured `cube` shell, a `hexagram` (`diagonal: "+x+y+z"`), and three `marker` "sacred seats" (the two vertex cells plus the centre) in white-gold. Not the full 13-axis model: the sacred seats here are three generic markers, not DOMY's Christic/One/Diabolic seats — a real consumer swaps in its own labelled model.
 - **Channels:** `camera.azimuth`/`elevation` (the flight), `camera.projection` (the blend), `camera.dolly` (a closing push-in), `part.opacity` (the shell thinning to glass, the wireframe brightening into "spokes", the seats fading in), `part.strokeProgress` (the two triangles drawing themselves).
@@ -224,7 +224,7 @@ The five scenes PLAN.md's "Cinematic Scenes — Self-Playing Instructions" commi
 
 ### The Blindness — Christic (`blindness_christic`) and Diabolic (`blindness_diabolic`)
 
-*Storyboard: PLAN.md, Scene 2.* The camera flies to (and past) a sacred vertex — first-person, via an ordinary `camera.dolly` value large enough to pass the content's own extent, no separate "inside" mode — while the antipode's own seven-cell court (`hidden_from(vertex)`, [Directions](preview3d/directions.md)) pulses once, then fades: 19 of 26 visible. The "Centre button" is not a separate control here; it is where the scene ENDS — the camera glides back to standard framing and all 26 relight, so `jump_to_end()` and a reduced-motion viewer both land on "only The One sees everything" rather than stuck mid-blindness.
+*Storyboard: PLAN.md, Scene 2.* The camera flies to (and past) a sacred vertex — first-person, via an ordinary `camera.dolly` value large enough to pass the content's own extent, no separate "inside" mode — while the antipode's own seven-cell court (`hidden_from(vertex)`, [Directions](preview3d/__about/directions.md)) pulses once, then fades: 19 of 26 visible. The "Centre button" is not a separate control here; it is where the scene ENDS — the camera glides back to standard framing and all 26 relight, so `jump_to_end()` and a reduced-motion viewer both land on "only The One sees everything" rather than stuck mid-blindness.
 
 - **Content:** `{"type": "model", "view": "cube"}` — the demo's full 27-seat model, glass shell included.
 - **Channels:** `camera.azimuth`/`elevation`/`dolly` (the flight in and the pull-back), `part.opacity` on the seven hidden cells (pulse, fade, hold, relight).
@@ -234,11 +234,11 @@ The five scenes PLAN.md's "Cinematic Scenes — Self-Playing Instructions" commi
 
 ### Five Stations (`five_stations`)
 
-*Storyboard: PLAN.md, Scene 3.* The cube fades until only one axis remains; the camera settles side-on to it; the two radial stops per end (`luminous`, `fallen`) — already a bead each, M3's `bead=True` addition to an axis stop — slide from the geometric vertex to their final stations, growing into visibility as they go. See [Cinematics](preview3d/cinematics.md) for the generator and [Model](MODELS.md#model-tree) for the radial law the geometry already encodes.
+*Storyboard: PLAN.md, Scene 3.* The cube fades until only one axis remains; the camera settles side-on to it; the two radial stops per end (`luminous`, `fallen`) — already a bead each, M3's `bead=True` addition to an axis stop — slide from the geometric vertex to their final stations, growing into visibility as they go. See [Cinematics](preview3d/__about/cinematics.md) for the generator and [Model](MODELS.md#model-tree) for the radial law the geometry already encodes.
 
 - **Content:** `{"type": "model", "view": "cube"}`.
 - **Channels:** `camera.azimuth`/`elevation` (the side-on settle, computed PER AXIS — never one hardcoded perpendicular), `part.opacity` (the fade-to-one-line, the beads growing in), `part.position` (the slide).
-- **Generalizes to any axis, by construction, not by extra scenes.** The shipped descriptor is one baked call to `build_five_stations_scene(build_cube_model(), "+x+y+z")` ([Cinematics](preview3d/cinematics.md)); the demo apps' GENERALIZE control (an axis picker) calls the identical function for whichever of the 13 axes is selected. `tests/test_animation_parity.py::test_shipped_five_stations_matches_the_generator` pins that the baked JSON and the live generator never quietly diverge.
+- **Generalizes to any axis, by construction, not by extra scenes.** The shipped descriptor is one baked call to `build_five_stations_scene(build_cube_model(), "+x+y+z")` ([Cinematics](preview3d/__about/cinematics.md)); the demo apps' GENERALIZE control (an axis picker) calls the identical function for whichever of the 13 axes is selected. `tests/test_animation_parity.py::test_shipped_five_stations_matches_the_generator` pins that the baked JSON and the live generator never quietly diverge.
 
 ---
 
@@ -267,4 +267,4 @@ A scene never needs an engine change. If it does, that is the signal that a new 
 
 **Determinism.** Fixed-timestep evaluation plus normalized time makes t = 0, ½, 1 exactly reproducible — `tests/test_animation_parity.py` drives every shipped scene to those instants in both renderers and compares camera angles, projection, and per-part visibility and opacity.
 
-**Generate the descriptor when the shape is the point, not the content.** Five Stations is one CHOREOGRAPHY that happens to apply to any of the cube's 13 axes; hand-authoring 13 near-identical JSON blocks would be exactly the enumeration root Rule #19 forbids. [Cinematics](preview3d/cinematics.md) computes the descriptor from the model and the chosen axis instead, and ships one baked instance so the shipped scene is still ordinary data like every other.
+**Generate the descriptor when the shape is the point, not the content.** Five Stations is one CHOREOGRAPHY that happens to apply to any of the cube's 13 axes; hand-authoring 13 near-identical JSON blocks would be exactly the enumeration root Rule #19 forbids. [Cinematics](preview3d/__about/cinematics.md) computes the descriptor from the model and the chosen axis instead, and ships one baked instance so the shipped scene is still ordinary data like every other.

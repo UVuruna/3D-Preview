@@ -206,7 +206,7 @@ A parametric spec is plain JSON and nests:
 
 Every spec accepts `name`, `position`, `scale` and `children`, so an assembly is one JSON tree with the same addressable structure a file would give you. Builders name their own children (`axes/arm:+x/shaft`, `cube/face:+y`), so parts control works identically for computed and loaded content.
 
-Adding a builder is documented in [Parametric Primitives](src/primitives.md).
+Adding a builder is documented in [Parametric Primitives](src/__about/primitives.md).
 
 The builders that ship: `axes` (arms from the origin), `cube` (a shell of six
 named faces), `marker` (a small seat with labels), and `group` (an empty node

@@ -192,12 +192,12 @@ Keys act on the viewer once it has focus (click it, or call `focus()` on its con
 - [The Two Renderers](RENDERERS.md) — which renderer to use, what each can do, how drift is prevented
 - [Making Models for 3D Preview](MODELS.md) — how to author or repair a model so its parts can be controlled
 - [Animation Scenes](SCENES.md) — the scene descriptor format, the channels, and the playback API
-- [Demo Application](main.md) — the runnable showcase and integration example
 - [Source (folder)](src/___src.md) — viewer core, primitives, parts, views, grid, keyboard, labels
 - [Web (folder)](web/___web.md) — host page and the built bundle
 - [Demo (folder)](demo/___demo.md) — standalone browser demo
 - [Preview3d Package (folder)](preview3d/___preview3d.md) — both widgets and the Qt-free model layer
-- [Demo App (folder)](demoapp/___demoapp.md) — demo window, parts panel, model panel, theme
+- [Demo App (folder)](demoapp/___demoapp.md) — demo window, parts panel, model panel, theme (the demo entry point `main.py` is Trivial tier — pure wiring, no own doc)
 - [Tests (folder)](tests/___tests.md) — regression pins and what each one guards
 - [Assets (folder)](assets/___assets.md) — logo and the bundled Inter typeface
+- [Open Questions](OPEN-QUESTIONS.md) — dilemmas surfaced during autonomous sessions, awaiting an owner call
 - [CLAUDE.md](CLAUDE.md) — AI guidance
