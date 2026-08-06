@@ -68,3 +68,13 @@ JS console output is forwarded to Python `logging` by the widget, so JS errors s
 
 - **DOMY Watch** — the Character Cube in its Encyclopedia. See [PLAN.md](PLAN.md) for the full brief, with one owner correction (2026-07-28): the previewer is **a container dropped in where the topic's image used to sit**, and nothing more. PLAN.md's hover-card and click-to-navigate contract is **not** wanted — do not build raycast picking for it. The viewer reports which page it is on by being on that page.
 - **Vaske Komarnici** (planned) — parametric window-screen preview; the `screen` primitive does not exist yet and should be designed against that site's product configurator when integration starts.
+
+## Layout Teeth — pending migration (2026-08-06)
+
+This project has a GUI and has NOT yet run the layout migration. Any GUI
+work here follows [MIGRATE-LAYOUT.md](../../MIGRATE-LAYOUT.md) +
+[GUI Rules](../../rules/GUI.md): the machine-wide layout guard already
+bites in every session; what this project still owes is the per-project
+audit — window registry, computed minimums fitting 1280x720, screenshots
+opened and graded >= 8/10. Reference implementations: Remote User
+(tests/test_layout_audit_qt.py) and DOMY Watch (tests/test_layout_audit.py).
