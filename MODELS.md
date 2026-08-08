@@ -79,7 +79,9 @@ Rules of thumb:
 
 - **Group by what you will manipulate together.** If the whole arm should dim at once, the shaft, tip and labels belong in one `arm:+x` group. If only the tip should dim, they must be siblings.
 - **Keep the tree shallow but real.** Two or three levels is plenty; nesting every mesh in its own group makes long addresses and buys nothing.
-- **Names carry no language.** They are identifiers, not display text (root Rule #12). Display text lives in the label sprite's content, which the host can swap.
+- **Names carry no language.** They are identifiers, not display text (the Language rule, root
+  CLAUDE.md → Universal Conduct — identifiers are English; see also
+  [GUI Rules](../../rules/GUI.md) → Translation Policy). Display text lives in the label sprite's content, which the host can swap.
 
 ---
 
