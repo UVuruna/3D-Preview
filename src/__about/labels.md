@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Draws text onto a 2D canvas at runtime and mounts it as a camera-facing sprite — no image assets, ever (root Rule #19: a label is computed from a string and a colour, not shipped as a picture).
+Draws text onto a 2D canvas at runtime and mounts it as a camera-facing sprite — no image assets, ever (Compute, Don't Generate (rules/CODE.md): a label is computed from a string and a colour, not shipped as a picture).
 
 ## Connections
 

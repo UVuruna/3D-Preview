@@ -8,7 +8,7 @@
 
 The 3D Preview container: owns the renderer, both cameras, orbit controls, studio lighting, the optional ground grid, and the lifecycle of whatever content is shown. Everything a consumer embeds *is* one `Viewer` instance, and every host control — button, key, Python method — routes through one of its methods.
 
-At 912 lines this sits in root Rule #20's "smell" band (500–1,000) rather than over the 1,000-line violation threshold. Noted here per the rule, not acted on: splitting it into responsibility-sized modules is a real refactor (new module boundaries, every caller updated) that is out of scope for this documentation migration — flagged to the owner rather than done unilaterally.
+At 912 lines this sits in THE STRUCTURE LAW (rules/CODE.md)'s "smell" band (500–1,000) rather than over the 1,000-line violation threshold. Noted here per the rule, not acted on: splitting it into responsibility-sized modules is a real refactor (new module boundaries, every caller updated) that is out of scope for this documentation migration — flagged to the owner rather than done unilaterally.
 
 ## Connections
 
@@ -101,7 +101,7 @@ A scene owns the camera outright while loaded, so a resize always re-frames and 
 
 - **Render-on-demand:** `_tick()` runs every frame but renders only when `controls.update()` reports movement (orbiting / damping inertia) or `_dirty` is set. Idle preview = idle GPU. A playing scene marks the frame dirty itself.
 - **Camera and playback notifications are rate-limited** to `stateInterval` (80 ms) while something is moving — a drag, damping inertia or a playing scene — with a final state the moment it stops. A 60 Hz stream over the Qt bridge buys nothing a readout can show.
-- **Runtime environment lighting:** `RoomEnvironment` through `PMREMGenerator` gives PBR materials a neutral studio look with **no HDR asset** (root Rule #19), plus one directional light for definition.
+- **Runtime environment lighting:** `RoomEnvironment` through `PMREMGenerator` gives PBR materials a neutral studio look with **no HDR asset** (Compute, Don't Generate (rules/CODE.md)), plus one directional light for definition.
 - **Content disposal on swap:** `_clear()` walks the outgoing content and disposes geometry, materials and textures — repeated `show()` calls cannot leak GPU memory.
 - **The grid lives outside the content group**, so enabling it never changes how the content is framed.
 - **A resize re-frames, but only while the framing is still the viewer's own.** Framing depends on the aspect ratio, so narrowing the container clips content that used to fit — but once the user has orbited, panned or zoomed, that view is theirs and a resize must not throw it away. The signal is the controls' `start` event, not `change`: damping raises `change` for a frame or two after a *programmatic* camera move, which would mark the view as the user's the instant the viewer framed it itself.

@@ -191,7 +191,7 @@ Budget the work honestly: renaming is minutes, splitting a merged mesh is real m
 
 ## Parametric Models — No File at All
 
-Before authoring a file, ask the derivation question (root Rule #19): **can this be computed from parameters?** If yes, it belongs in `src/primitives.js` as a builder, not on disk — every variant then comes free and nothing has to be re-exported when a colour or a size changes.
+Before authoring a file, ask the derivation question (Compute, Don't Generate (rules/CODE.md)): **can this be computed from parameters?** If yes, it belongs in `src/primitives.js` as a builder, not on disk — every variant then comes free and nothing has to be re-exported when a colour or a size changes.
 
 A parametric spec is plain JSON and nests:
 
@@ -252,7 +252,7 @@ is the NORMALISED sum of those letters.
 | `+x+y`, `+x-z` | `(1,1,0)/√2` | an edge midpoint — 12 of them, **6 axes** |
 | `+x+y+z`, `-x+y-z` | `(1,1,1)/√3` | a vertex diagonal — 8 of them, **4 axes** |
 
-Thirteen axes, twenty-six directions, one rule (root Rule #19). The six legacy
+Thirteen axes, twenty-six directions, one rule (Compute, Don't Generate (rules/CODE.md)). The six legacy
 tokens still work because they are the **one-letter case** of that rule, not a
 table beside it. A raw unit vector is accepted anywhere a token is.
 
@@ -332,7 +332,7 @@ validates" mean the same thing on both sides.
 
 **Errors carry the path** — `model.axes[3].ends[1].color` — because a model is
 generated data and "invalid model" without a location is not something anyone
-can act on (root Rule #1).
+can act on (No Error Masking (rules/CODE.md)).
 
 <a id="model-tree"></a>
 
@@ -427,7 +427,7 @@ widget.switcher_state()                        # {"register": …, "reading": �
 ### Orientations and Snap Views
 
 A cube can be set down in exactly **24** ways, and they are computed from 6
-up-faces × 4 spins rather than stored (root Rule #19). Each is named
+up-faces × 4 spins rather than stored (Compute, Don't Generate (rules/CODE.md)). Each is named
 `<face>:<spin>` — `+y:0` is upright.
 
 ```python
@@ -534,7 +534,7 @@ The Python listing is asynchronous — the answer arrives in the callback, becau
 
 **Hiding is not removing.** `setPartVisible(path, false)` is the reversible one and is what toggling wants. `removePart` detaches the part and frees its geometry and materials; it is for content that must not stay in memory, and it cannot be undone without rebuilding the scene.
 
-**A wrong path raises**, listing the paths that do exist. That is deliberate (root Rule #1): a typo must not look like a part that simply had nothing to change.
+**A wrong path raises**, listing the paths that do exist. That is deliberate (No Error Masking (rules/CODE.md)): a typo must not look like a part that simply had nothing to change.
 
 ---
 
@@ -550,4 +550,4 @@ Before a model is considered done:
 - [ ] Shell faces meant to be seen through are **separate and double-sided**
 - [ ] Transforms applied; model near the origin; **+Y up**
 - [ ] The demo app's PARTS list shows the names **you expect**, with no `Mesh#N`
-- [ ] Anything derivable from parameters was built as a **primitive**, not exported as a file (root Rule #19)
+- [ ] Anything derivable from parameters was built as a **primitive**, not exported as a file (Compute, Don't Generate (rules/CODE.md))

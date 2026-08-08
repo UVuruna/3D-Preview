@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Every direction the cube has, from ONE rule. An arm used to be one of six hardcoded entries, which made the cube's six edge axes and four vertex diagonals literally inexpressible — the exact thing a 3D previewer exists to show (root Rule #19: define how the pieces move, never enumerate the games).
+Every direction the cube has, from ONE rule. An arm used to be one of six hardcoded entries, which made the cube's six edge axes and four vertex diagonals literally inexpressible — the exact thing a 3D previewer exists to show (Compute, Don't Generate (rules/CODE.md): define how the pieces move, never enumerate the games).
 
 A **token** is one or more distinct signed cube letters (`'+x'`, `'-z'`, `'+x+y'`, `'+x-z'`, `'+x+y+z'`, `'-x+y-z'`), and its direction is the NORMALISED sum of those letters. So `'+x'` is `(1,0,0)`, `'+x+y'` is `(1,1,0)/√2` — the true midpoint of the cube's +x/+y edge — and `'+x+y+z'` is `(1,1,1)/√3`, the true body diagonal. The six legacy tokens keep working because they are the one-letter case of the same rule, not a special case beside it. A raw unit vector is accepted anywhere a token is.
 
@@ -41,4 +41,4 @@ A **token** is one or more distinct signed cube letters (`'+x'`, `'-z'`, `'+x+y'
 
 - **`sacred` is not derived.** It shares the vertex geometry with `tertiary`; which diagonal is sacred is a statement about meaning, and only a model can make it.
 - **Canonical naming is enforced at the name, not at the lookup.** Two spellings of one direction resolving to two part paths would be a model whose parts move depending on how a host happened to write them.
-- **Distinct-letter tokens are the whole grammar.** A malformed token (repeated letter, unknown letter, odd length) fails loudly naming what was wrong, rather than resolving to some other direction (root Rule #1).
+- **Distinct-letter tokens are the whole grammar.** A malformed token (repeated letter, unknown letter, odd length) fails loudly naming what was wrong, rather than resolving to some other direction (No Error Masking (rules/CODE.md)).

@@ -13,7 +13,7 @@ scenes** (PLAN.md, The Four Owner Models). This module builds that model: 13
 axes (3 face + 6 edge + 4 vertex), 27 seats (6 + 12 + 8 + the centre), every
 colour derived, every position derived, and the four views.
 
-Nothing here is a stored file (root Rule #19). The geometry follows from the
+Nothing here is a stored file (Compute, Don't Generate (rules/CODE.md)). The geometry follows from the
 cube, the colours follow from the poles, and the words follow from a small
 seed vocabulary of the SIX poles — twelve words per register become
 fifty-four seats.

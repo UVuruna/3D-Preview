@@ -5,7 +5,7 @@
 ## Purpose
 
 Single source for every colour, radius and spacing value the demo app uses
-(root Rule #4 — no component elsewhere hardcodes a literal), plus the
+(No Hardcoded Values (rules/CODE.md) — no component elsewhere hardcodes a literal), plus the
 function that turns those tokens into the application's QSS stylesheet.
 DESIGN.md dark surfaces with one indigo accent.
 
@@ -28,4 +28,4 @@ One non-obvious rule inside the generated QSS: `QLabel { background: transparent
 
 ## Design Decisions
 
-- **Inter is bundled, not assumed.** DESIGN.md forbids shipping the system default (Segoe) as the primary typeface, and none of the DESIGN.md typefaces are installed on a stock Windows machine — the font file travels with the project and `main.py` registers it at startup, with a logged error if that fails (root Rule #1).
+- **Inter is bundled, not assumed.** DESIGN.md forbids shipping the system default (Segoe) as the primary typeface, and none of the DESIGN.md typefaces are installed on a stock Windows machine — the font file travels with the project and `main.py` registers it at startup, with a logged error if that fails (No Error Masking (rules/CODE.md)).

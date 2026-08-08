@@ -106,7 +106,7 @@ Hidden-surface handling also differs in kind. The web core uses a depth buffer, 
 
 ## How Drift Is Prevented
 
-Two implementations of one component invite drift (root Rule #5). Two mechanisms hold them together:
+Two implementations of one component invite drift (No Duplicate Code (rules/CODE.md)). Two mechanisms hold them together:
 
 1. **`shared/spec.json`** — the pole palette, neutral colours, face order, view presets, camera defaults and the animation channel table live in ONE file, and **`shared/scenes.json`** holds the shipped scenes. The JS core imports both at build time; the Python renderer reads them at run time. A colour changed there changes in both, and a test asserts neither source restates a pole colour or its own copy of the frame rate.
 2. **`tests/test_renderer_parity.py`** — the same specs go into both widgets and the observable results are compared: part paths, initial visibility, `show_only`, opacity isolation, framing and camera state.

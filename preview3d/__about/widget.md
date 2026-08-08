@@ -34,7 +34,7 @@ The `QObject` JS calls into, one slot per message the page can send.
 ### `_ConsolePage`
 `QWebEnginePage` subclass forwarding the JS console into Python `logging`
 (`preview3d.widget` logger) — a JS error inside the viewer lands in the
-host app's log (root Rule #1).
+host app's log (No Error Masking (rules/CODE.md)).
 
 ### `Preview3DWidget`
 

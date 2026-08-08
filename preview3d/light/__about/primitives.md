@@ -25,7 +25,7 @@ Identical to the web core's: `axes` (arm groups with `shaft`, `tip`, an optional
 
 ## `hexagram` — The Hexagram X-ray Overlay
 
-The Scene 1 cinematic ([SCENES.md](../../../SCENES.md)) needs a genuinely new shape — the Star-of-David triangles a cube's silhouette hexagon splits into, down a body diagonal — computed from the diagonal (root Rule #19), never per-scene coordinates. See the [flow diagram](../__flow/primitives.md) for the derivation.
+The Scene 1 cinematic ([SCENES.md](../../../SCENES.md)) needs a genuinely new shape — the Star-of-David triangles a cube's silhouette hexagon splits into, down a body diagonal — computed from the diagonal (Compute, Don't Generate (rules/CODE.md)), never per-scene coordinates. See the [flow diagram](../__flow/primitives.md) for the derivation.
 
 Part tree: `hexagram/triangle:up`, `hexagram/triangle:down` — one `Node` each, holding all three `Segment`s, so a single `part.strokeProgress` on the path draws (or un-draws) the whole triangle at once (see [Light Renderer](renderer.md)). Colours default to `axisColors.sacred` (up) and `neutral.joint` (down) rather than inventing new hues; a scene may override both.
 

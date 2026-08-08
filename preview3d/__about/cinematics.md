@@ -6,10 +6,10 @@
 ## Purpose
 
 Cinematic scene GENERATORS — a master rule for a whole family of scenes,
-never one hand-authored descriptor per case (root Rule #19). The Five
+never one hand-authored descriptor per case (Compute, Don't Generate (rules/CODE.md)). The Five
 Stations "generalizes to any axis on demand" (PLAN.md, Extra 3D Views) — the
 cube has 13 of them, and hand-authoring 13 near-identical JSON descriptors in
-`shared/scenes.json` would be exactly the enumeration Rule #19 forbids. This
+`shared/scenes.json` would be exactly the enumeration Compute, Don't Generate (rules/CODE.md) forbids. This
 module computes the scene descriptor for ANY axis of a model instead: the
 geometry (vertex positions, the side-on camera angle, which OTHER parts to
 fade) is all derived from the model's own data, so a new axis is a function

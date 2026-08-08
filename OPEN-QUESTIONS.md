@@ -1,7 +1,7 @@
 # Open Questions
 
 Dilemmas surfaced during autonomous sessions that need an owner call. Tracked
-and linked from [README.md](README.md) per root Rule #18/CLAUDE.md.
+and linked from [README.md](README.md) per the UV/ inbox convention (rules/START.md) / CLAUDE.md.
 
 ## 2026-08-02 — Docs migration to MD-First 2.0 + enforcement layer
 
@@ -24,7 +24,7 @@ step-by-one auto-advance path (the demo's `−` / `+` orientation buttons) is
 broken. This is a pre-existing defect, unrelated to the docs migration; this
 session's brief was zero behavior change, so it was documented rather than
 fixed. **Needs an owner call**: fix directly (add the import), or treat as a
-dedicated bug-fix session with its own regression test per Rule #25.
+dedicated bug-fix session with its own regression test per FIXED = VERIFIED (root CLAUDE.md Law #5).
 
 ### Structure-law "smell" band files noticed, not acted on
 

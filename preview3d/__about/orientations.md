@@ -8,7 +8,7 @@
 The cube's twenty-four orientations, COMPUTED, plus the snap-view arithmetic.
 
 A cube can be set down in exactly 24 ways, and they are the product of two
-choices rather than a table of 24 matrices to copy (root Rule #19): pick
+choices rather than a table of 24 matrices to copy (Compute, Don't Generate (rules/CODE.md)): pick
 which face points up (6), then how far it is spun about that direction (4).
 Each orientation is named `<face>:<spin>`, e.g. `+y:0` (the identity) or
 `-z:2`. `+y:0` is the identity, so a freshly shown model starts unrotated

@@ -48,6 +48,6 @@ Mirror of the web core's Timeline (`src/animation.js`): the same descriptor form
 - **`bool` is excluded from "is a number" explicitly.** In Python `bool` subclasses `int`, so without the guard a `part.visible` track would cross-fade through 0.5 here while stepping in JavaScript — two renderers disagreeing on a channel that looks correct in both sources.
 - **Vector interpolation reuses the same eased fraction as a scalar's**, computed once per sample rather than per component — a `part.position` track costs the same one `ease()` call a `camera.azimuth` track does.
 - **Rounding is half-up, not Python's default.** The built-in `round()` rounds halves to even; JavaScript's `Math.round` rounds them up. On an exact tie that would put the two renderers one frame apart (`_round_half_up`).
-- **Validation happens at load** (`prepare_track`), naming the scene in the message, rather than failing silently mid-playback (root Rule #1).
+- **Validation happens at load** (`prepare_track`), naming the scene in the message, rather than failing silently mid-playback (No Error Masking (rules/CODE.md)).
 - **No Qt import anywhere in this module** — the LIGHT renderer keeps its geometry and its timeline testable headless; only `view.py` and `renderer.py` touch Qt.
 - **The easing names in `shared/spec.json` are checked against what is implemented, at import time** (`_UNIMPLEMENTED`), so the shared spec cannot advertise a curve this module lacks — it raises `RuntimeError` at import if it does.

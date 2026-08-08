@@ -68,4 +68,4 @@ Pseudocode:
             node.segments ← [Segment(corners[i], corners[(i+1) mod 3]) FOR i IN 0..2]
             root.add(node)
 
-Computed from the diagonal alone (root Rule #19 — computed, not stored): each pole of the chosen body diagonal has three edge-neighbour vertices, and those two triangles ARE the six "equatorial face-diagonals" the Hexagram X-ray draws itself into. Each triangle is one `Node` holding its three segments, so a single `part.strokeProgress` on `hexagram/triangle:up` (or `:down`) draws all three sides at once — the "DRAW themselves" beat of Scene 1 (`SCENES.md`).
+Computed from the diagonal alone (Compute, Don't Generate (rules/CODE.md) — computed, not stored): each pole of the chosen body diagonal has three edge-neighbour vertices, and those two triangles ARE the six "equatorial face-diagonals" the Hexagram X-ray draws itself into. Each triangle is one `Node` holding its three segments, so a single `part.strokeProgress` on `hexagram/triangle:up` (or `:down`) draws all three sides at once — the "DRAW themselves" beat of Scene 1 (`SCENES.md`).

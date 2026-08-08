@@ -12,7 +12,7 @@ two renderers one unit apart on an exact tie and nowhere else, which is the
 hardest kind of drift to notice.
 
 Deliberately small: this is the one place the difference is spelled out, so
-no other module has to remember it (root Rule #5).
+no other module has to remember it (No Duplicate Code (rules/CODE.md)).
 
 ## Connections
 

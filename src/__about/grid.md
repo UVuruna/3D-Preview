@@ -4,7 +4,7 @@
 
 ## Purpose
 
-An optional reference plane under the content, sized to it — computed from the content's bounds every time the content changes (root Rule #19), never a fixed 10×10 helper that is wrong for anything but a unit cube.
+An optional reference plane under the content, sized to it — computed from the content's bounds every time the content changes (Compute, Don't Generate (rules/CODE.md)), never a fixed 10×10 helper that is wrong for anything but a unit cube.
 
 ## Connections
 

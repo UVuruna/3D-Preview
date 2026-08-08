@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The thirteen-axis cube model, COMPUTED — the model the four owner views are views OVER. Nothing here is a stored file (root Rule #19): the geometry follows from the cube's own direction grammar, the colours follow from the poles, and the words follow from a small seed vocabulary of the six poles plus the centre. Twelve words per register become fifty-four seats.
+The thirteen-axis cube model, COMPUTED — the model the four owner views are views OVER. Nothing here is a stored file (Compute, Don't Generate (rules/CODE.md)): the geometry follows from the cube's own direction grammar, the colours follow from the poles, and the words follow from a small seed vocabulary of the six poles plus the centre. Twelve words per register become fifty-four seats.
 
 A consumer supplies the WORDS, never the geometry — DOMY Watch's exporter calls this with its own canon, so its terms stay in DOMY and this gadget stays content-agnostic. `DEMO_VOCABULARY` is a neutral demo that shows the structure and claims nothing.
 

@@ -22,4 +22,4 @@ Minimal full-viewport page that mounts one viewer as the global `viewer`. Loaded
 
 ## Design Decisions
 
-- **Errors stay visible (root Rule #1):** the host page routes `unhandledrejection` to `console.error`, and the widget forwards the JS console into Python `logging` — an async model-load failure lands in the host app's log, never silently vanishes.
+- **Errors stay visible (No Error Masking (rules/CODE.md)):** the host page routes `unhandledrejection` to `console.error`, and the widget forwards the JS console into Python `logging` — an async model-load failure lands in the host app's log, never silently vanishes.

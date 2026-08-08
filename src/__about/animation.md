@@ -51,7 +51,7 @@ The loaded scene plus its clock.
 
 ## Design Decisions
 
-- **Validation happens at load, not during playback.** An unknown channel, a missing `path`, an empty key list or an unknown easing throws while the scene is being loaded — where the scene can be named in the message — instead of silently animating nothing halfway through (root Rule #1).
+- **Validation happens at load, not during playback.** An unknown channel, a missing `path`, an empty key list or an unknown easing throws while the scene is being loaded — where the scene can be named in the message — instead of silently animating nothing halfway through (No Error Masking (rules/CODE.md)).
 - **Non-numeric values step automatically.** A projection name, a visibility flag and a switch-group child need no special case; "cannot be interpolated" and "should step" are the same set. The Python mirror needs one extra guard for this, because `bool` is an `int` there.
 - **Vector interpolation reuses the same eased fraction as a scalar's.** One `ease()` call per sample, whether the channel is a number or a `[x, y, z]`. Pinned cross-language by `test_vector_interpolation_agrees_with_the_web_core` in `tests/test_animation_parity.py`.
 - **Fixed timestep.** Wall time accumulates and is spent in whole 1/fps steps, so a scene evaluates at the same instants regardless of the host's frame rate — that is what makes both renderers agree and `stepFrame` mean something exact. `maxStep` caps the catch-up so a hidden tab does not fast-forward the scene on return.

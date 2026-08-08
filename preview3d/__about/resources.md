@@ -38,4 +38,4 @@ growing its own copy of the same two-location search.
 - **Two documented locations, one search.** An installed wheel and a repo
   checkout put the bundled directories in different places; every caller
   that needs shared data goes through this one resolver instead of growing
-  its own copy of the same two-candidate search (root Rule #5).
+  its own copy of the same two-candidate search (No Duplicate Code (rules/CODE.md)).

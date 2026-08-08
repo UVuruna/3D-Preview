@@ -6,7 +6,7 @@
 
 `Preview3DLightWidget` — a plain `QWidget` that draws the 3D preview itself. Same scene specs, same part paths and same method names as the web-backed `Preview3DWidget`, so a host can swap one for the other; see [RENDERERS.md](../../../RENDERERS.md).
 
-This is the widget shell: it owns Qt state (the paint surface, the animation `QTimer`, mouse/keyboard event handlers) and delegates every actual algorithm to the modules it wraps — projection and painting to [Light Renderer](renderer.md), framing and orbiting to [Light Camera](camera.md), keyframe evaluation to [Light Timeline](animation.md), model resolution to [Light Model View](model_view.md). Its own logic is orchestration (dispatch tables for input and animation channels, state bookkeeping) rather than a multi-step algorithm of its own, so it stays Standard tier with no `__flow/` — a diagram here would mostly restate a dispatch table already given as a table below. At 600 lines it is near the project's file-size smell threshold (root Rule #20); splitting it is out of scope for this migration.
+This is the widget shell: it owns Qt state (the paint surface, the animation `QTimer`, mouse/keyboard event handlers) and delegates every actual algorithm to the modules it wraps — projection and painting to [Light Renderer](renderer.md), framing and orbiting to [Light Camera](camera.md), keyframe evaluation to [Light Timeline](animation.md), model resolution to [Light Model View](model_view.md). Its own logic is orchestration (dispatch tables for input and animation channels, state bookkeeping) rather than a multi-step algorithm of its own, so it stays Standard tier with no `__flow/` — a diagram here would mostly restate a dispatch table already given as a table below. At 600 lines it is near the project's file-size smell threshold (THE STRUCTURE LAW (rules/CODE.md)); splitting it is out of scope for this migration.
 
 ## Connections
 
@@ -55,7 +55,7 @@ Bindings mirror the web renderer's, defined in `src/keyboard.js`.
 
 ## Design Decisions
 
-- **`load_model` refuses loudly rather than showing a blank view** (root Rule #1). A host calling it has picked the wrong renderer and should learn that at the call site, not from an empty widget.
+- **`load_model` refuses loudly rather than showing a blank view** (No Error Masking (rules/CODE.md)). A host calling it has picked the wrong renderer and should learn that at the call site, not from an empty widget.
 - **`list_parts`, `switcher_state` and `animation_state` all accept an optional callback and also return the value directly.** The web-backed widget can only answer asynchronously (it crosses into JS and back), so host code written against it passes a callback; supporting both shapes is what makes the two widgets genuinely interchangeable.
 - **A resize re-frames only while the framing is still ours.** Framing is aspect-dependent, so narrowing the widget clips content that used to fit — but once the user has orbited, panned or zoomed (`_user_framed`), that view is theirs. Same rule as the web core. A loaded scene owns the camera outright, so it always re-frames and re-applies the current instant.
 - **Showing new content clears the loaded scene**, exactly as in the web core: a scene is written against the parts of specific content, and keeping it would mean raising from inside `show_scene()` on a path that no longer exists. Content first, scene second. **The loaded MODEL and any snapped orientation go the same way**, and for the same reason — both are state about content that no longer exists (`_mount`).

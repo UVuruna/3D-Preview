@@ -8,7 +8,7 @@ The demo app's MODEL controls: the four owner models (as views over one
 model), the Switcher (register and reading), and the 24-orientation stepper.
 
 Its own widget rather than another block inside [Demo Window](window.md),
-because it is its own responsibility (root Rule #20): everything here drives
+because it is its own responsibility (THE STRUCTURE LAW (rules/CODE.md)): everything here drives
 a MODEL ([Making Models](../../MODELS.md)), and none of it means anything for
 a plain primitive scene. The window owns the stage and the renderer switch;
 this owns the model controls. Like the parts panel, it holds no state of its
@@ -29,7 +29,7 @@ which one it is driving.
 ### ModelPanel
 
 #### Attributes
-- `DEMO_MODEL` (module level) — the neutral thirteen-axis cube the gadget ships, built once via `build_cube_model()`; a consumer passes its own vocabulary to the same builder (root Rule #19 — the geometry is computed, only the words are anyone's content)
+- `DEMO_MODEL` (module level) — the neutral thirteen-axis cube the gadget ships, built once via `build_cube_model()`; a consumer passes its own vocabulary to the same builder (Compute, Don't Generate (rules/CODE.md) — the geometry is computed, only the words are anyone's content)
 - `_view` — the model's currently active view name, or `None` when nothing is shown; the only state the panel keeps
 
 #### Methods

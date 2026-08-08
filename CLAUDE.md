@@ -13,17 +13,17 @@ An embeddable 3D viewer **component** (library, not an installable app) with **t
 - **WEB** — a Three.js core bundled by esbuild, used by websites via a script tag and by Qt apps through `Preview3DWidget` (QWebEngineView).
 - **LIGHT** — `Preview3DLightWidget`, software 3D drawn with QPainter: no browser engine, no GPU, no file loading.
 
-**Because it is a library, the installable-app pipeline does not apply:** no `setup/` folder, no NSIS build, no Rule #23 self-update, no Rule #24 auto-release of installers. Consumers take the committed `web/preview3d.min.js` or `pip install git+` the repo.
+**Because it is a library, the installable-app pipeline does not apply:** no `setup/` folder, no NSIS build, no Self-Update (rules/SHIP.md), no THE RELEASE LAW (rules/SHIP.md) auto-release of installers. Consumers take the committed `web/preview3d.min.js` or `pip install git+` the repo.
 
 The stack question raised by [PLAN.md](PLAN.md) — which commissioned QPainter software 3D and rejected QWebEngine on installer weight — was **settled by the owner on 2026-07-28: build both.** Neither renderer supersedes the other; a consumer picks by what it needs.
 
 ## Ground Rules
 
-- **A capability lands in BOTH renderers, or its absence is documented.** Two implementations of one component is a standing drift risk (Rule #5). When you add something to one, either add it to the other or record it in RENDERERS.md's "only" lists — an undocumented difference is a bug.
+- **A capability lands in BOTH renderers, or its absence is documented.** Two implementations of one component is a standing drift risk (No Duplicate Code (rules/CODE.md)). When you add something to one, either add it to the other or record it in RENDERERS.md's "only" lists — an undocumented difference is a bug.
 - **Values both renderers must agree on live in `shared/spec.json`** — palette, face order, view presets, camera defaults. The JS core imports it at build time, Python reads it at run time. Never restate one of those values in either source; a parity test fails if you do.
 - **The WEB renderer's display logic lives in `src/`.** `preview3d/widget.py` only marshals calls (JSON specs, base64 model bytes) — never add rendering behaviour to it.
 - **The LIGHT renderer keeps its geometry Qt-free.** `vectors`, `scene`, `primitives` and `camera` import no Qt, so they can be tested without a GUI; only `renderer.py` and `view.py` touch it.
-- **Primitives are computed (root Rule #19).** New simple shapes are added as parametric builders in `src/primitives.js` — never as stored model files. `exportGLB()` exists for the rare case a real file is needed.
+- **Primitives are computed (Compute, Don't Generate (rules/CODE.md)).** New simple shapes are added as parametric builders in `src/primitives.js` — never as stored model files. `exportGLB()` exists for the rare case a real file is needed.
 - **Animation scenes are DATA, and only ever drive flat parameters.** A scene is a JSON descriptor in `shared/scenes.json` (or a consumer's own data) — keyframes over the channels in `shared/spec.json`. If a scene needs an engine change, the missing piece is a CHANNEL, added to both renderers; never hardcode choreography in either. See [SCENES.md](SCENES.md).
 - **Every builder names its children.** An unnamed node cannot be addressed by the parts API and shows up as `Mesh#3` in a host's UI — see [MODELS.md](MODELS.md).
 - **`web/preview3d.min.js` is a build artifact that IS committed** — consumers must not need Node. After ANY change in `src/`, run `npm run build` and commit the refreshed bundle together with the source change.
@@ -50,7 +50,7 @@ Rendering claims require screenshots or measurements (root Guideline #1):
 - **Framing / geometry:** measure the rendered silhouette from pixels rather than trusting the look. The regular-hexagon claim is pinned that way: render a plain cube at `iso` in both projections, find the silhouette's corner radii from the centroid, and check the spread (orthographic ≈ 1.00x, perspective ≈ 1.27x at fov 45).
 - **Animation:** never claim "it plays" from a screenshot — a still frame cannot show motion. Connect `camera_changed`, sample the reported azimuth ~1 s apart while a scene runs (it must move), then press pause and sample again (it must not), and step one frame (the frame counter must go up by exactly 1). Do it in BOTH renderers. `tests/test_animation_parity.py` covers the evaluated instants; this covers the clock actually running.
 
-JS console output is forwarded to Python `logging` by the widget, so JS errors surface in the host app's log (Rule #1).
+JS console output is forwarded to Python `logging` by the widget, so JS errors surface in the host app's log (No Error Masking (rules/CODE.md)).
 
 ## Known Traps
 
@@ -69,12 +69,32 @@ JS console output is forwarded to Python `logging` by the widget, so JS errors s
 - **DOMY Watch** — the Character Cube in its Encyclopedia. See [PLAN.md](PLAN.md) for the full brief, with one owner correction (2026-07-28): the previewer is **a container dropped in where the topic's image used to sit**, and nothing more. PLAN.md's hover-card and click-to-navigate contract is **not** wanted — do not build raycast picking for it. The viewer reports which page it is on by being on that page.
 - **Vaske Komarnici** (planned) — parametric window-screen preview; the `screen` primitive does not exist yet and should be designed against that site's product configurator when integration starts.
 
-## Layout Teeth — pending migration (2026-08-06)
+## Layout Teeth — installed enforcement vs. what is still pending (2026-08-08)
 
-This project has a GUI and has NOT yet run the layout migration. Any GUI
-work here follows [MIGRATE-LAYOUT.md](../../MIGRATE-LAYOUT.md) +
-[GUI Rules](../../rules/GUI.md): the machine-wide layout guard already
-bites in every session; what this project still owes is the per-project
-audit — window registry, computed minimums fitting 1280x720, screenshots
-opened and graded >= 8/10. Reference implementations: Remote User
-(tests/test_layout_audit_qt.py) and DOMY Watch (tests/test_layout_audit.py).
+<a id="zubi-v2-status"></a>
+
+**Zubi v2 note:** this project has a GUI (two renderers — WEB via
+`Preview3DWidget`/QWebEngineView, LIGHT via `Preview3DLightWidget`/QPainter),
+so any GUI work here is also governed by the Zubi v2 algorithmic teeth and
+Grader v2 in [GUI Rules](../../rules/GUI.md#zubi-v2). Status here: **pending
+rollout** — no `layout_checks_qt.py`-based audit exists in `tests/` yet
+(verified: only `tests/test_window_minimum_size.py` is installed, a narrow
+regression pin, not the ALG-1..9 template).
+
+**Installed here today:** `tests/test_window_minimum_size.py` — a regression
+pin for the real defect recorded in Known Traps above (an unwrappable
+legend-chip row driving a 1649 px window minimum). It is a narrow bug pin,
+not the full Space & Legibility audit.
+
+**Still NOT run: the layout migration itself.** This project has a GUI and
+has NOT yet gone through [MIGRATE-LAYOUT.md](../../MIGRATE-LAYOUT.md) +
+[GUI Rules](../../rules/GUI.md) → Law — Space & Legibility: the machine-wide
+layout guard (`rules/hooks/layout_guard.py`) already bites in every session,
+but this project still owes the per-project teeth those rules require —
+`tests/test_layout_law.py` (banned clipping/eliding/hard-size API), a window
+registry, the full `tests/test_layout_audit.py` (every registered window
+instantiated offscreen at its declared minimum and larger, walked for
+clipping/scroll-with-free-space), and screenshots opened and graded >= 8/10.
+Reference implementations: Remote User (tests/test_layout_audit_qt.py) and
+DOMY Watch (tests/test_layout_audit.py). See also [Zubi v2](#zubi-v2-status)
+below for the further algorithmic-teeth layer, also pending here.

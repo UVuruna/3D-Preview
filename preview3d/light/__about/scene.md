@@ -34,6 +34,6 @@ The three things a node can draw. `Face` is a flat convex polygon, `Segment` a s
 
 ## Design Decisions
 
-- **`require_part` raises `KeyError` listing the paths that exist** (root Rule #1). A typo must never look like a part that simply had nothing to change — the same rule the web core follows.
+- **`require_part` raises `KeyError` listing the paths that exist** (No Error Masking (rules/CODE.md)). A typo must never look like a part that simply had nothing to change — the same rule the web core follows.
 - **Position and scale are simple per-node values (translate + uniform scale), and rotation is a separate optional field (`basis`) rather than folded into a general transform.** A world point is one multiply-by-scalar and one add per level for the common (no-rotation) case, and only pays a matrix multiply on the rare node that carries one — see [Light Renderer](renderer.md)'s `walk()`.
 - **Opacity multiplies down the tree** — but the multiplication itself happens in the renderer's tree walk, not here; this module only stores the per-node `opacity` value the renderer reads.

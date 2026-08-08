@@ -26,7 +26,7 @@ the camera/animation readouts are each one signal connection.
 
 ## Config
 
-Module-level constants (root Rule #4), organised under section banners in the
+Module-level constants (No Hardcoded Values (rules/CODE.md)), organised under section banners in the
 source:
 
 | Constant | Contents |
@@ -34,7 +34,7 @@ source:
 | `RENDERERS` | the two back ends, their labels and whether each can load files |
 | `WINDOW` | title, start size, and the minimum the layout must be able to reach |
 | `PANEL_WIDTH` / `STAGE_MINIMUM` | control-panel width; how small the 3D view may get |
-| `DEMO_SCENES` | `Axes gizmo`, `Compass axes` (multi-label arms), `Cube`, `Cube + core` — parametric specs, not model files (root Rule #19) |
+| `DEMO_SCENES` | `Axes gizmo`, `Compass axes` (multi-label arms), `Cube`, `Cube + core` — parametric specs, not model files (Compute, Don't Generate (rules/CODE.md)) |
 | `ANIMATIONS` / `SPEEDS` | read from `shared/scenes.json` and `shared/spec.json` — the demo plays the very descriptors both renderers ship with, and never restates a scene or a speed |
 | `TRANSPORT` / `SCRUB_STEPS` | the five playback buttons and the scrub slider's resolution |
 | `VIEW_BUTTONS` / `PROJECTIONS` | the preset and projection toggles |
@@ -58,7 +58,7 @@ here.
 - `_with_focus(action, *args)`: run a control's action, then return keyboard focus to the viewer
 - `_load_model()`: file dialog → `load_model()`; clears the scene selection, since what is shown is no longer a demo scene
 - `_play_animation(descriptor)`: load the scene's own content if it declares one, then `set_animation` + `play_animation`. `content.type == "model"` (a HOST CONVENTION, not a timeline channel — [Animation Scenes](../../SCENES.md)) shows the demo MODEL and one of its views through `self.model.show_model(...)` instead of a bare primitive spec — Blindness and Five Stations need the 27-seat model
-- `_play_generalized_five_stations()`: the Five Stations "generalize control" (PLAN.md) — regenerates `build_five_stations_scene(DEMO_MODEL, axis_id)` for whichever axis the combo box selects and plays it through the same `_play_animation` path, rather than shipping 13 near-identical scenes (root Rule #19)
+- `_play_generalized_five_stations()`: the Five Stations "generalize control" (PLAN.md) — regenerates `build_five_stations_scene(DEMO_MODEL, axis_id)` for whichever axis the combo box selects and plays it through the same `_play_animation` path, rather than shipping 13 near-identical scenes (Compute, Don't Generate (rules/CODE.md))
 - `_cycle_background()` / `_apply_background()`: step through `BACKGROUNDS`, keeping the button label in sync
 - `_on_camera_changed(state)` / `_on_animation_changed(state)`: the readouts, the toggle states, and the parts reload — see [flow](../__flow/window.md)
 

@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Cinematic scene GENERATORS — a master rule for a whole family of scenes, never one hand-authored descriptor per case (root Rule #19). The Five Stations "generalizes to any axis on demand" (PLAN.md) — the cube has 13 of them, and hand-authoring 13 near-identical JSON descriptors would be exactly the enumeration Rule #19 forbids. This module computes the scene descriptor for ANY axis of a model instead: the geometry (vertex positions, the side-on camera angle, which OTHER parts to fade) is all derived from the model's own data, so a new axis is a function argument, not a new file.
+Cinematic scene GENERATORS — a master rule for a whole family of scenes, never one hand-authored descriptor per case (Compute, Don't Generate (rules/CODE.md)). The Five Stations "generalizes to any axis on demand" (PLAN.md) — the cube has 13 of them, and hand-authoring 13 near-identical JSON descriptors would be exactly the enumeration Compute, Don't Generate (rules/CODE.md) forbids. This module computes the scene descriptor for ANY axis of a model instead: the geometry (vertex positions, the side-on camera angle, which OTHER parts to fade) is all derived from the model's own data, so a new axis is a function argument, not a new file.
 
 Pure data — no three.js import, matching the rest of the model layer (`directions.js`, `modelscene.js`, `switcher.js`).
 

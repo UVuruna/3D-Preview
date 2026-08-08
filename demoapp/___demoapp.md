@@ -25,7 +25,7 @@ example. Launched by the demo entry point (`main.py`, `python main.py`).
 
 ## Design Decisions
 
-- **Split from `main.py` by responsibility** (root Rule #20): the entry point stays a few lines of pure wiring, and the window, the parts list and the model controls are separate cohesive units with the theme as data.
+- **Split from `main.py` by responsibility** (THE STRUCTURE LAW (rules/CODE.md)): the entry point stays a few lines of pure wiring, and the window, the parts list and the model controls are separate cohesive units with the theme as data.
 - **Every button hands focus back to the viewer** (`_with_focus` / `_pick`), so the keyboard bindings keep working after a click without the user re-clicking the stage.
 - **The panel mirrors the component's API one-to-one.** Anything the demo can do, a consumer can do with the same call — that is the point of a demo that doubles as documentation.
 - **Nothing inside may set a large window minimum.** The panel scrolls as one column, the legend wraps and lives inside that scroll, and the stage may shrink to a thumbnail — so the window fits in half a screen. Pinned by [tests (folder)](../tests/___tests.md)'s `test_window_minimum_size.py`.

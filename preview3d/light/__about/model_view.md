@@ -6,7 +6,7 @@
 
 The model layer's viewer-side operations, for the LIGHT renderer: validate a model, turn it into content, work out what a view asks for, and resolve an orientation to a basis.
 
-Split out of [Light Widget](view.md) for the reason [Light Scene](scene.md) was: showing a MODEL is its own responsibility, and the widget's job is to be a widget (root Rule #20 / THE STRUCTURE LAW). Everything here takes what it needs and RETURNS what it decided; none of it touches Qt or reaches into a widget, so the model half can be exercised without a GUI. Mirrored function-for-function by the web core's `src/modelview.js`.
+Split out of [Light Widget](view.md) for the reason [Light Scene](scene.md) was: showing a MODEL is its own responsibility, and the widget's job is to be a widget (THE STRUCTURE LAW — rules/CODE.md). Everything here takes what it needs and RETURNS what it decided; none of it touches Qt or reaches into a widget, so the model half can be exercised without a GUI. Mirrored function-for-function by the web core's `src/modelview.js`.
 
 This is a thin coordination layer — each function is a short, direct call into `model`, `model_scene`, `orientations` or `primitives`, with no multi-step algorithm of its own — so it stays Standard tier with no flow diagram.
 
@@ -22,7 +22,7 @@ This is a thin coordination layer — each function is a short, direct call into
 
 ## Functions
 
-- `build_model_content(model)` → `(validated model, content root)`. Validation happens HERE rather than at the call site so both renderers reject the same models (root Rule #1 — a generated field that is quietly wrong should not surface three screens later as a missing label)
+- `build_model_content(model)` → `(validated model, content root)`. Validation happens HERE rather than at the call site so both renderers reject the same models (No Error Masking (rules/CODE.md) — a generated field that is quietly wrong should not surface three screens later as a missing label)
 - `view_settings(model, name)` → `(opacities by path, camera direction or None)`
 - `model_view_list(model)` → `[{name, label}, …]`, what a host builds buttons from
 - `orientation_basis(identifier)` → the rotation matrix for one of the cube's 24 orientations, or `None` for upright

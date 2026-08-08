@@ -8,7 +8,7 @@
 Every direction the cube has, from ONE rule. An arm used to be one of six
 hardcoded entries in each renderer, which made the cube's six edge axes and
 four vertex diagonals literally inexpressible — the exact thing a 3D
-previewer exists to show (root Rule #19: define how the pieces move, never
+previewer exists to show (Compute, Don't Generate (rules/CODE.md): define how the pieces move, never
 enumerate the games).
 
 A TOKEN is one or more distinct signed cube letters ("+x", "-z", "+x+y",

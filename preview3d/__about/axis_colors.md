@@ -7,7 +7,7 @@
 
 The colour of an axis end — and therefore of the seat it points at — COMPUTED
 from the poles it lies between. Owner decree 2026-07-28, and a direct
-application of root Rule #19: a colour per axis would be twenty-six invented
+application of Compute, Don't Generate (rules/CODE.md): a colour per axis would be twenty-six invented
 values to keep in sync, where four rules cover every direction the cube has.
 
 ## Connections
@@ -56,4 +56,4 @@ what the second threshold is set just below.
   seats wearing one colour is a lie about the structure. Thinning the edge
   family and deepening the vertex family moves both off the saturated pole
   ring, so the collision cannot happen by construction rather than by luck —
-  `verify_palette` refuses it anyway if it ever does (root Rule #1).
+  `verify_palette` refuses it anyway if it ever does (No Error Masking (rules/CODE.md)).

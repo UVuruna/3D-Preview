@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Simple shapes COMPUTED from plain-JSON specs — the root Rule #19 workhorse of this project. No stored model files: an axes gizmo or a cube is a handful of parameters, and every variant (colours, lengths, labels) is derived live. `buildPrimitive(spec)` dispatches on `spec.type` and returns a `THREE.Group` whose children are **named**, so the [Parts](parts.md) API can address them one by one.
+Simple shapes COMPUTED from plain-JSON specs — the Compute, Don't Generate (rules/CODE.md) workhorse of this project. No stored model files: an axes gizmo or a cube is a handful of parameters, and every variant (colours, lengths, labels) is derived live. `buildPrimitive(spec)` dispatches on `spec.type` and returns a `THREE.Group` whose children are **named**, so the [Parts](parts.md) API can address them one by one.
 
 ## Connections
 
@@ -116,7 +116,7 @@ Part tree: `marker/body` plus one group per stop. Its **position** comes from th
 
 ### `hexagram` — The Hexagram X-ray Overlay
 
-The two triangles a cube's silhouette splits into when seen down a body diagonal (Scene 1, [Animation Scenes](../../SCENES.md)) — COMPUTED from the diagonal (root Rule #19), never per-scene coordinates.
+The two triangles a cube's silhouette splits into when seen down a body diagonal (Scene 1, [Animation Scenes](../../SCENES.md)) — COMPUTED from the diagonal (Compute, Don't Generate (rules/CODE.md)), never per-scene coordinates.
 
 | Field | Default | Meaning |
 |-------|---------|---------|
@@ -145,6 +145,6 @@ Planned: `book`, `screen` (window screen for Vaske Komarnici — design it again
 
 ## Design Decisions
 
-- **Unknown types, axes and malformed colour lists fail loudly** (root Rule #1) — a typo in a spec throws with the valid values, it never renders an empty scene silently.
+- **Unknown types, axes and malformed colour lists fail loudly** (No Error Masking (rules/CODE.md)) — a typo in a spec throws with the valid values, it never renders an empty scene silently.
 - **Shaft and tip get their own material each.** Sharing one would make a later opacity change on the shaft silently dim the tip; the parts layer would clone anyway, but a model should not depend on that rescue.
 - **Specs are plain JSON** so they cross the Python↔JS bridge untouched — the Python side never constructs geometry, only specs.

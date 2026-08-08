@@ -38,7 +38,7 @@ Unnamed nodes fall back to `Type#index` (`Mesh#3`), which is why naming is the w
 
 ## Design Decisions
 
-- **A wrong path throws, listing the paths that exist** (root Rule #1). A typo must never look like a part that simply had nothing to change — that failure is invisible and expensive.
+- **A wrong path throws, listing the paths that exist** (No Error Masking (rules/CODE.md)). A typo must never look like a part that simply had nothing to change — that failure is invisible and expensive.
 - **Opacity multiplies down; a part reports its OWN.** Dimming a group dims everything under it without changing what its children say about themselves — which is the LIGHT renderer's model too, and it has to be, or `listParts` reports two different numbers for the same part. Pushing the value straight onto every descendant's material (what this did before the model pins caught it) makes a child claim its parent's dimming as its own, and lets re-lighting one child silently escape the group. The value is recorded in `userData.preview3dOpacity` and the whole content's effective opacities are recomputed from the root on every change.
 - **A built-in faintness is the part's own opacity too.** The cube's wireframe is recorded in `userData` at build time, not left implicit in its material, so dimming the cube around it multiplies from the right starting value.
 - **Materials are cloned on first opacity change.** A material is routinely shared — between an arm's shaft and its tip here, across whole meshes in a real glTF — so dimming one part would otherwise dim its neighbours. The clone is marked in `userData` so repeated changes reuse it instead of cloning on every slider step.

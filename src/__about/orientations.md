@@ -6,7 +6,7 @@
 
 ## Purpose
 
-The cube's twenty-four orientations, COMPUTED. A cube can be set down in exactly 24 ways, and they are the product of two choices, not a table of 24 matrices to copy: pick which face points up (6), then how far it is spun about that direction (4). Root Rule #19 in its plainest form — define how the piece moves and every position follows.
+The cube's twenty-four orientations, COMPUTED. A cube can be set down in exactly 24 ways, and they are the product of two choices, not a table of 24 matrices to copy: pick which face points up (6), then how far it is spun about that direction (4). Compute, Don't Generate (rules/CODE.md) in its plainest form — define how the piece moves and every position follows.
 
 Also here: `snapAngles`, which turns any direction into the azimuth and elevation a camera must stand at to look down it — the snap views, including the four body diagonals no preset covers.
 

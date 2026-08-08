@@ -39,7 +39,7 @@ model layer needs the same arithmetic and belongs to neither renderer.
 
 - `add`, `sub`, `scale`, `dot`, `cross`, `length`, `normalize` — the usual
   ones; `normalize` raises on a zero-length vector rather than returning NaN
-  (root Rule #1)
+  (No Error Masking (rules/CODE.md))
 - `basis_from(direction)` — orthonormal `(forward, right, up)` for a view
   direction, with world +Z standing in for world up on a straight
   top/bottom view, where the cross product would otherwise collapse
@@ -59,4 +59,4 @@ model layer needs the same arithmetic and belongs to neither renderer.
   everywhere else in the model layer.
 - **`normalize` raises on a zero-length vector** rather than returning NaN
   or an arbitrary zero vector — a silent NaN would propagate through every
-  downstream computation and surface far from its cause (root Rule #1).
+  downstream computation and surface far from its cause (No Error Masking (rules/CODE.md)).

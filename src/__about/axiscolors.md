@@ -6,7 +6,7 @@
 
 ## Purpose
 
-The colour of an axis end — and therefore of the seat it points at — COMPUTED from the poles it lies between. Owner decree 2026-07-28, and a direct application of root Rule #19: a colour per axis would be twenty-six invented values to keep in sync, where four rules cover every direction the cube has.
+The colour of an axis end — and therefore of the seat it points at — COMPUTED from the poles it lies between. Owner decree 2026-07-28, and a direct application of Compute, Don't Generate (rules/CODE.md): a colour per axis would be twenty-six invented values to keep in sync, where four rules cover every direction the cube has.
 
 ## Connections
 
@@ -32,7 +32,7 @@ The colour of an axis end — and therefore of the seat it points at — COMPUTE
 
 ## The Collision Rule
 
-The moonlight thinning is not decoration. A naive two-pole blend can land on a hue the palette already spends (the blue+yellow case the canon names), and two seats wearing one colour is a lie about the structure. Thinning the whole edge family toward a pale moonlight, and deepening the vertex family toward ink, moves both off the saturated pole ring so the collision cannot happen by construction rather than by luck — `verifyPalette` fails loudly if it ever does anyway (root Rule #1).
+The moonlight thinning is not decoration. A naive two-pole blend can land on a hue the palette already spends (the blue+yellow case the canon names), and two seats wearing one colour is a lie about the structure. Thinning the whole edge family toward a pale moonlight, and deepening the vertex family toward ink, moves both off the saturated pole ring so the collision cannot happen by construction rather than by luck — `verifyPalette` fails loudly if it ever does anyway (No Error Masking (rules/CODE.md)).
 
 ## Design Decisions
 

@@ -44,6 +44,6 @@ The `$` form is what holds a model to its OWN declaration: a model carrying only
 
 ## Design Decisions
 
-- **Errors carry the PATH** — `model.axes[3].ends[1].names.canon`. A model is generated data; "invalid model" without a location is not something a consumer can act on (root Rule #1).
+- **Errors carry the PATH** — `model.axes[3].ends[1].names.canon`. A model is generated data; "invalid model" without a location is not something a consumer can act on (No Error Masking (rules/CODE.md)).
 - **Unknown fields are refused, not ignored.** A misspelled field that validated would be a field nobody notices is missing.
 - **Keys beginning with `_` are allowed everywhere**, so a generated model can carry `_comment` notes the way the shared JSON files do.

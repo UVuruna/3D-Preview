@@ -34,7 +34,7 @@ The same thing in a browser, with GLB export as well: open `demo/index.html`.
 
 ## Why This Stack
 
-*Answer required by root Rule #21 — which language/stack fits this task best, and why?*
+*Answer required by Technology Selection (rules/START.md) — which language/stack fits this task best, and why?*
 
 **Both, deliberately** — because the consumers genuinely differ and neither stack covers all of them.
 
@@ -42,7 +42,7 @@ A browser WebGL core (**Three.js**, bundled by esbuild) is the only stack that s
 
 So there is a second renderer: **software 3D drawn with QPainter**, pure Python, no browser engine and no GPU. For parametric labelled scenes — the kind the first consumer needs — it gives the same free orbit, the same views and projections, and crisper text; what it gives up is file loading, real materials, large meshes and browsers.
 
-Two implementations of one component invite drift (root Rule #5), so the mitigation is built in rather than promised: everything both must agree on lives in `shared/spec.json`, and `tests/test_renderer_parity.py` drives both from the same specs and compares what a host can observe. See [The Two Renderers](RENDERERS.md).
+Two implementations of one component invite drift (No Duplicate Code (rules/CODE.md)), so the mitigation is built in rather than promised: everything both must agree on lives in `shared/spec.json`, and `tests/test_renderer_parity.py` drives both from the same specs and compares what a host can observe. See [The Two Renderers](RENDERERS.md).
 
 ---
 

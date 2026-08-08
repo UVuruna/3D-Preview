@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The model layer's viewer-side operations. Split out of `viewer.js` for the reason `parts.js` was: showing a MODEL is its own responsibility (validate it, turn it into content, work out what a view asks for, resolve an orientation), and the Viewer's job is to be a container (root Rule #20). Everything here takes what it needs and RETURNS what it decided; none of it reaches into a viewer, so it is testable and mirrors the Python side function for function.
+The model layer's viewer-side operations. Split out of `viewer.js` for the reason `parts.js` was: showing a MODEL is its own responsibility (validate it, turn it into content, work out what a view asks for, resolve an orientation), and the Viewer's job is to be a container (THE STRUCTURE LAW (rules/CODE.md)). Everything here takes what it needs and RETURNS what it decided; none of it reaches into a viewer, so it is testable and mirrors the Python side function for function.
 
 ## Connections
 
@@ -29,5 +29,5 @@ The model layer's viewer-side operations. Split out of `viewer.js` for the reaso
 
 ## Design Decisions
 
-- **A model may carry fewer registers than the component offers.** Asking one of its seats for a vocabulary it does not have would fail deep inside a switch group; `checkRegister` refuses it at the point the register was chosen instead (root Rule #1).
+- **A model may carry fewer registers than the component offers.** Asking one of its seats for a vocabulary it does not have would fail deep inside a switch group; `checkRegister` refuses it at the point the register was chosen instead (No Error Masking (rules/CODE.md)).
 - **Nothing here reaches into a Viewer instance.** Every function takes plain data (a model, an identifier) and returns plain data (opacities, a quaternion) — which is what lets it be tested standalone and lets the LIGHT renderer's `model_view.py` mirror it function for function despite touching neither Three.js nor Qt.
