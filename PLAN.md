@@ -4,7 +4,7 @@
 **M1 and M2 are delivered** — see [Milestones](#milestones); M3 (the
 cinematic scenes) and M4 (the DOMY integration) remain. A
 Gadgets-category project whose purpose is to serve OTHER projects as a
-reusable 3D PREVIEWER. First consumer: DOMY Watch's Encyclopedia (the
+reusable 3D PREVIEWER. First consumer: Watch Academy's Encyclopedia (the
 Character Cube topics).
 
 Where this document and the shipped code differ, the code's own docs
@@ -63,7 +63,7 @@ QPainter** (a `preview3d` package exposing a `QWidget`).
 
 Why this fits best:
 
-- **The consumers are PySide6 apps.** DOMY Watch embeds a QWidget
+- **The consumers are PySide6 apps.** Watch Academy embeds a QWidget
   directly — no new runtime, no bridge.
 - **Installer weight.** The main alternative (three.js inside
   QWebEngineView) drags QtWebEngine (~100+ MB) into every consumer's

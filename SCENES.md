@@ -211,7 +211,7 @@ In [`shared/scenes.json`](shared/scenes.json), available to Python as `load_shar
 
 ## The Cinematic Scenes
 
-The five scenes PLAN.md's "Cinematic Scenes — Self-Playing Instructions" commissioned for M3, in the shipped order. Each plays on the demo's own neutral vocabulary (`build_cube_model()`'s generic English words) or a handful of bespoke primitives — a real consumer (DOMY Watch's Character-Cube exporter) plays the identical descriptors over its own model, since a scene addresses PARTS, not words.
+The five scenes PLAN.md's "Cinematic Scenes — Self-Playing Instructions" commissioned for M3, in the shipped order. Each plays on the demo's own neutral vocabulary (`build_cube_model()`'s generic English words) or a handful of bespoke primitives — a real consumer (Watch Academy's Character-Cube exporter) plays the identical descriptors over its own model, since a scene addresses PARTS, not words.
 
 ### Hexagram X-ray — Offices (`hexagram_offices`) and Being (`hexagram_being`)
 

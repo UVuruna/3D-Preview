@@ -13,7 +13,7 @@ how to choose.
 The MODEL layer (`model`, `model_scene`, `cube_model`, `directions`,
 `axis_colors`, `orientations`, `switcher`) is pure Python and imports no Qt at
 all, so a consumer's exporter can build and validate a model without a GUI —
-which is exactly what DOMY Watch's Character-Cube exporter does.
+which is exactly what Watch Academy's Character-Cube exporter does.
 """
 
 from .cinematics import build_five_stations_scene

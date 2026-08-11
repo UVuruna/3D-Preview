@@ -66,7 +66,7 @@ JS console output is forwarded to Python `logging` by the widget, so JS errors s
 
 ## Consumers
 
-- **DOMY Watch** — the Character Cube in its Encyclopedia. See [PLAN.md](PLAN.md) for the full brief, with one owner correction (2026-07-28): the previewer is **a container dropped in where the topic's image used to sit**, and nothing more. PLAN.md's hover-card and click-to-navigate contract is **not** wanted — do not build raycast picking for it. The viewer reports which page it is on by being on that page.
+- **Watch Academy** — the Character Cube in its Encyclopedia. See [PLAN.md](PLAN.md) for the full brief, with one owner correction (2026-07-28): the previewer is **a container dropped in where the topic's image used to sit**, and nothing more. PLAN.md's hover-card and click-to-navigate contract is **not** wanted — do not build raycast picking for it. The viewer reports which page it is on by being on that page.
 - **Vaske Komarnici** (planned) — parametric window-screen preview; the `screen` primitive does not exist yet and should be designed against that site's product configurator when integration starts.
 
 ## Layout Teeth — installed enforcement vs. what is still pending (2026-08-08)
@@ -95,6 +95,6 @@ but this project still owes the per-project teeth those rules require —
 registry, the full `tests/test_layout_audit.py` (every registered window
 instantiated offscreen at its declared minimum and larger, walked for
 clipping/scroll-with-free-space), and screenshots opened and graded >= 8/10.
-Reference implementations: Remote User (tests/test_layout_audit_qt.py) and
-DOMY Watch (tests/test_layout_audit.py). See also [Zubi v2](#zubi-v2-status)
+Reference implementations: Vibe Coder (tests/test_layout_audit_qt.py) and
+Watch Academy (tests/test_layout_audit.py). See also [Zubi v2](#zubi-v2-status)
 below for the further algorithmic-teeth layer, also pending here.

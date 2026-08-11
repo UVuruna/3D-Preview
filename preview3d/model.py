@@ -4,7 +4,7 @@ A MODEL is the content a consumer hands the viewer: axes, cells and views (see
 MODELS.md). Its shape is stated once, as data, in `shared/model_schema.json` —
 this module is only the interpreter of that statement, and `src/model.js` is the
 same interpreter in JavaScript. Stating the schema once is what makes "it
-validates" mean the same thing on both sides; a consumer's exporter (DOMY Watch
+validates" mean the same thing on both sides; a consumer's exporter (Watch Academy
 builds the Character Cube this way) checks against the same file the renderers
 read.
 

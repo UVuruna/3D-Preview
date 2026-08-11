@@ -22,7 +22,7 @@ behaviour of its own; that lives in `src/`.
 
 ### Used by
 - [Demo Window](../../demoapp/__about/window.md) — the demo application
-- Host applications (DOMY Watch first) — plain Qt widget, no special integration
+- Host applications (Watch Academy first) — plain Qt widget, no special integration
 
 ## Classes
 

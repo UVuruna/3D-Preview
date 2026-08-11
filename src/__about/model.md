@@ -8,7 +8,7 @@
 
 Loading and validating a MODEL — the content a consumer hands the viewer: axes, seats and views. The full authoring guide is [Making Models](../../MODELS.md); this module is only the **interpreter of the schema**, and `preview3d/model.py` is the same interpreter in Python.
 
-The schema itself is DATA, in `shared/model_schema.json`. Stating it once is what makes "it validates" mean the same thing on both sides: a consumer's exporter — DOMY Watch builds the Character Cube this way — checks against the same file the renderers read.
+The schema itself is DATA, in `shared/model_schema.json`. Stating it once is what makes "it validates" mean the same thing on both sides: a consumer's exporter — Watch Academy builds the Character Cube this way — checks against the same file the renderers read.
 
 ## Connections
 

@@ -32,7 +32,7 @@ fifty-four seats.
 ### Used by
 - [Model Panel](../../demoapp/__about/model_panel.md) — `DEMO_MODEL`, the demo's own
   thirteen-axis cube
-- DOMY Watch's Character-Cube exporter (external consumer, not part of this
+- Watch Academy's Character-Cube exporter (external consumer, not part of this
   repo) — with its own vocabulary
 
 ### Mirrored by
@@ -69,7 +69,7 @@ diagram for how they fit together.
 
 ## Design Decisions
 
-- **A consumer supplies the WORDS, never the geometry.** DOMY Watch calls
+- **A consumer supplies the WORDS, never the geometry.** Watch Academy calls
   this with its own canon, so its sixty-five terms stay in DOMY and this
   gadget stays content-agnostic. What ships here is a neutral demo
   vocabulary that shows the structure and claims nothing.

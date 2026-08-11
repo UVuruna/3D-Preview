@@ -31,5 +31,5 @@ This is a thin coordination layer — each function is a short, direct call into
 
 ## Design Decisions
 
-- **Validation happens at `build_model_content`, not at the call site.** A model is generated data (e.g. by DOMY Watch's exporter); rejecting a bad one where it enters the viewer means both renderers agree on what "valid" means, instead of each guessing at a malformed field independently.
+- **Validation happens at `build_model_content`, not at the call site.** A model is generated data (e.g. by Watch Academy's exporter); rejecting a bad one where it enters the viewer means both renderers agree on what "valid" means, instead of each guessing at a malformed field independently.
 - **Nothing here touches Qt.** Every function takes plain data and a model dict and returns plain data or a `Node` — so the model half of the LIGHT renderer is exercised by tests without constructing a widget.

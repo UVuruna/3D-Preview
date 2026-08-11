@@ -11,7 +11,7 @@ vocabulary of the SIX poles: a two-letter seat says what its two poles say, a
 three-letter seat what its three say. Twelve words per register become
 fifty-four seats.
 
-**A consumer supplies the words, never the geometry.** DOMY Watch's exporter
+**A consumer supplies the words, never the geometry.** Watch Academy's exporter
 calls `build_cube_model(vocabulary=..., sacred=...)` with its own canon, so the
 sixty-five terms stay in DOMY and this gadget stays content-agnostic. What ships
 here is a neutral demo vocabulary that shows the structure and claims nothing.

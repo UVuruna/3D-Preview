@@ -11,7 +11,7 @@ the same interpreter in JavaScript.
 
 The schema itself is DATA, in `shared/model_schema.json`. Stating it once is
 what makes "it validates" mean the same thing on both sides: a consumer's
-exporter — DOMY Watch builds the Character Cube this way — checks against the
+exporter — Watch Academy builds the Character Cube this way — checks against the
 same file the renderers read.
 
 ## Connections

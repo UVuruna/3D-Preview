@@ -57,7 +57,7 @@ Two implementations of one component invite drift (No Duplicate Code (rules/CODE
   📝 RENDERERS.md       ← The two renderers: which to use and why
   📝 MODELS.md          ← How to author models whose parts can be controlled
   📝 SCENES.md          ← How to write animation scenes (keyframes as data)
-  📝 PLAN.md            ← Commissioning spec (DOMY Watch's brief for this gadget)
+  📝 PLAN.md            ← Commissioning spec (Watch Academy's brief for this gadget)
   🐍 main.py            ← Demo application (run this)
   ⚙️ package.json       ← JS build config (esbuild)
   ⚙️ pyproject.toml     ← Python package config (hatchling)

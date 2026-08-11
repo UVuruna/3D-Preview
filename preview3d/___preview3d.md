@@ -41,7 +41,7 @@ GUI at all.
 ### Used by
 - [Demo App (folder)](../demoapp/___demoapp.md) — both renderers, switchable live; `build_cube_model`, `READINGS`/`REGISTERS`, `orientation_ids`
 - [Tests (folder)](../tests/___tests.md) — parity and regression pins
-- DOMY Watch (external consumer, not part of this repo) — the Character Cube in its Encyclopedia, and its own Character-Cube exporter built on the Qt-free model layer
+- Watch Academy (external consumer, not part of this repo) — the Character Cube in its Encyclopedia, and its own Character-Cube exporter built on the Qt-free model layer
 
 ## Design Decisions
 
@@ -49,7 +49,7 @@ GUI at all.
   `cube_model`, `directions`, `axis_colors`, `orientations`, `switcher`,
   `cinematics`, `vectors`, `jsmath` and `resources` are pure Python, so a
   consumer's exporter can build and validate a model from a script with no
-  GUI — which is exactly what DOMY Watch's Character-Cube exporter does.
+  GUI — which is exactly what Watch Academy's Character-Cube exporter does.
   Only the two widget layers touch PySide6. (`cinematics.py` reaches into
   `light.camera.Camera` for one piece of pure trigonometry — confirmed
   Qt-free, and reused rather than re-derived.)
